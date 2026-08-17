@@ -1,0 +1,61 @@
+@import 'tailwindcss';
+@import './fonts.css';
+
+@theme {
+  --color-ink: #0a0908;
+  --color-ink-raise: #131110;
+  --color-ink-line: #262220;
+  --color-bone: #e9e2d6;
+  --color-bone-dim: #948c81;
+  --color-safelight: #d4703a;
+  --color-halation: #f2a65a;
+  --color-grade-teal: #24484c;
+
+  --font-display: 'Fraunces Variable', serif;
+  --font-interface: 'Instrument Sans Variable', sans-serif;
+  --font-mono: 'Geist Mono Variable', monospace;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    background-color: var(--color-ink);
+    color: var(--color-bone);
+  }
+
+  body {
+    font-family: var(--font-interface);
+    font-size: clamp(1rem, 0.95rem + 0.25vw, 1.25rem);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    font-variation-settings:
+      'SOFT' 100,
+      'WONK' 1;
+  }
+
+  code,
+  kbd,
+  samp,
+  pre,
+  .metadata {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
