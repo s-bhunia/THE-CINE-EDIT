@@ -16,6 +16,8 @@ interface Enquiry {
   message: string;
 }
 
+declare const process: { env: Record<string, string | undefined> };
+
 function json(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {
     status,
