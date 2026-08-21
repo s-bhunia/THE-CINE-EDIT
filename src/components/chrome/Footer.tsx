@@ -1,4 +1,5 @@
 import { site } from '@/content/site';
+import { WhatsAppLink } from '@/components/ui/WhatsAppLink';
 
 export function Footer() {
   return (
@@ -22,6 +23,7 @@ export function Footer() {
           >
             {site.contact.email}
           </a>
+          <WhatsAppLink label={site.contact.whatsapp} />
           <a
             href={site.contact.locationLink}
             className="hover:text-safelight transition-colors"

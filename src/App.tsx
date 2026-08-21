@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from 'react-router';
-import { Suspense, useEffect } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { Header } from '@/components/chrome/Header';
 import { Footer } from '@/components/chrome/Footer';
 import { SafeAreaGuides } from '@/components/chrome/SafeAreaGuides';
@@ -9,9 +9,16 @@ import { CutTransition } from '@/components/chrome/CutTransition';
 import { useLenis } from '@/hooks/useLenis';
 import { initAnalytics, trackPageview } from '@/lib/analytics';
 
+const MediaDiagnostics = lazy(() =>
+  import('@/components/media/MediaDiagnostics').then((m) => ({
+    default: m.MediaDiagnostics,
+  })),
+);
+
 export default function App() {
   useLenis();
   const location = useLocation();
+  const showDiagnostics = new URLSearchParams(location.search).get('diag') === 'media';
 
   useEffect(() => {
     initAnalytics();
@@ -44,6 +51,12 @@ export default function App() {
           <Outlet />
         </Suspense>
       </main>
+
+      {showDiagnostics && (
+        <Suspense fallback={null}>
+          <MediaDiagnostics />
+        </Suspense>
+      )}
       <Footer />
     </div>
   );

@@ -12,6 +12,9 @@ interface LoopVideoProps {
   plateHidden?: boolean;
 }
 
+const REVEAL_EVENTS = ['loadeddata', 'canplay', 'playing'] as const;
+const HAVE_CURRENT_DATA = 2;
+
 export function LoopVideo({
   av1Src,
   hevcSrc,
@@ -23,20 +26,32 @@ export function LoopVideo({
   plateHidden = false,
 }: LoopVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const { allowVideoPreview } = useMediaCapability();
+  const { allowHeroVideo } = useMediaCapability();
   const [showVideo, setShowVideo] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
     onVideoElement?.(video);
-    if (!video || !allowVideoPreview) return;
+    if (!video || !allowHeroVideo) return;
 
     const reveal = () => setShowVideo(true);
-    video.addEventListener('canplay', reveal);
+    for (const eventName of REVEAL_EVENTS) video.addEventListener(eventName, reveal);
+
+    const attemptPlay = () => {
+      const started = video.play();
+      if (!started) return;
+      void started.catch(() => {
+        video.preload = 'auto';
+        video.load();
+      });
+    };
+
+    if (video.readyState >= HAVE_CURRENT_DATA) reveal();
+    attemptPlay();
 
     const syncWithVisibility = () => {
       if (document.visibilityState === 'visible') {
-        void video.play().catch(() => undefined);
+        attemptPlay();
       } else {
         video.pause();
       }
@@ -44,14 +59,14 @@ export function LoopVideo({
     document.addEventListener('visibilitychange', syncWithVisibility);
 
     return () => {
-      video.removeEventListener('canplay', reveal);
+      for (const eventName of REVEAL_EVENTS) video.removeEventListener(eventName, reveal);
       document.removeEventListener('visibilitychange', syncWithVisibility);
       video.pause();
       video.removeAttribute('src');
       video.load();
       onVideoElement?.(null);
     };
-  }, [allowVideoPreview, onVideoElement]);
+  }, [allowHeroVideo, onVideoElement]);
 
   return (
     <div className="relative w-full h-full bg-ink">
@@ -63,7 +78,7 @@ export function LoopVideo({
         className="absolute inset-0 w-full h-full object-cover"
       />
 
-      {allowVideoPreview && (
+      {allowHeroVideo && (
         <video
           ref={videoRef}
           autoPlay

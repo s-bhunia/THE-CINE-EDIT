@@ -58,6 +58,10 @@ test('primary navigation is reachable at every breakpoint', async ({ page }) => 
   for (const viewport of viewports) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await page.goto('/');
+    await page
+      .locator('header nav a, header button')
+      .first()
+      .waitFor({ state: 'attached', timeout: 20000 });
 
     const directLink = page
       .getByRole('navigation')

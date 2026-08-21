@@ -11,13 +11,13 @@ const processData = [
     id: 'assembly',
     label: 'Assembly',
     body: 'A documentary-first pass: the day is logged and structured around its emotional beats before pacing or music enters the room. Ratio is typically 8–12:1 for a wedding day.',
-    image: '/assets/process/assembly.avif',
+    image: '/assets/process/timeline.avif',
   },
   {
     id: 'grade',
     label: 'Grade',
     body: 'Colour is finished in an ACES workflow biased toward Vision3 warmth, then delivered as a mastered ProRes 4444 XQ with H.264 and web-ready derivatives for sharing.',
-    image: '/assets/process/grade.avif',
+    image: '/assets/process/color_grade.avif',
   },
 ];
 

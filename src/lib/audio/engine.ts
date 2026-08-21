@@ -18,18 +18,18 @@ const PREFS_KEY = 'audioPrefs';
 type MutedListener = (muted: boolean) => void;
 
 function readStoredMute(): boolean {
-  if (typeof localStorage === 'undefined') return true;
+  if (typeof localStorage === 'undefined') return false;
   try {
     const raw = localStorage.getItem(PREFS_KEY);
-    if (!raw) return true;
+    if (!raw) return false;
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed === 'object' && parsed !== null && 'muted' in parsed) {
       return Boolean((parsed as { muted: unknown }).muted);
     }
   } catch {
-    return true;
+    return false;
   }
-  return true;
+  return false;
 }
 
 class AudioEngine {

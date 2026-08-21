@@ -7,6 +7,11 @@ import { Packages } from './Packages';
 import { Testimonials } from './Testimonials';
 import { CtaBand } from './CtaBand';
 import { Meta } from '@/components/seo/Meta';
+import { Suspense, lazy } from 'react';
+
+const GradeWheels = lazy(() =>
+  import('@/components/grade/GradeWheels').then((m) => ({ default: m.GradeWheels })),
+);
 
 export function ReelRoute() {
   return (
@@ -23,6 +28,9 @@ export function ReelRoute() {
       <Packages />
       <Testimonials />
       <CtaBand />
+      <Suspense fallback={null}>
+        <GradeWheels />
+      </Suspense>
     </>
   );
 }

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { NavLink } from 'react-router';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { NavLink, useLocation } from 'react-router';
 import { site } from '@/content/site';
 
 const SCRIM_AFTER_PX = 24;
@@ -14,6 +14,13 @@ const LINKS = [
 
 const linkClassName =
   'metadata uppercase tracking-widest text-sm hover:text-safelight transition-colors';
+
+const desktopLinkClassName = `${linkClassName} relative z-10 px-3 py-1.5`;
+
+interface IndicatorRect {
+  left: number;
+  width: number;
+}
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -37,6 +44,33 @@ export function Header() {
     };
   }, []);
 
+  const navRef = useRef<HTMLElement>(null);
+  const [indicator, setIndicator] = useState<IndicatorRect | null>(null);
+  const { pathname } = useLocation();
+
+  const syncIndicator = useCallback(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const active = nav.querySelector('[aria-current="page"]');
+    if (!(active instanceof HTMLElement)) {
+      setIndicator(null);
+      return;
+    }
+    setIndicator({ left: active.offsetLeft, width: active.offsetWidth });
+  }, []);
+
+  useLayoutEffect(() => {
+    syncIndicator();
+  }, [pathname, syncIndicator]);
+
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(syncIndicator);
+    observer.observe(nav);
+    return () => observer.disconnect();
+  }, [syncIndicator]);
+
   const opaque = scrolled || menuOpen;
 
   return (
@@ -52,9 +86,24 @@ export function Header() {
           {site.name}
         </NavLink>
 
-        <nav className="hidden md:flex gap-8">
+        <nav ref={navRef} className="hidden md:flex relative gap-3">
+          <span
+            aria-hidden="true"
+            className="absolute inset-y-0 rounded-[2px] bg-safelight motion-safe:transition-[transform,width,opacity] motion-safe:duration-280 motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)]"
+            style={{
+              width: indicator ? `${indicator.width}px` : 0,
+              transform: `translateX(${indicator?.left ?? 0}px)`,
+              opacity: indicator ? 1 : 0,
+            }}
+          />
           {LINKS.map((link) => (
-            <NavLink key={link.to} to={link.to} className={linkClassName}>
+            <NavLink
+              key={link.to}
+              to={link.to}
+              className={({ isActive }) =>
+                `${desktopLinkClassName} ${isActive ? 'text-ink hover:text-ink' : ''}`
+              }
+            >
               {link.label}
             </NavLink>
           ))}

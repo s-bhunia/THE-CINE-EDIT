@@ -666,3 +666,17 @@ const worksData = [
 ];
 
 export const works = worksData.map((work) => WorkSchema.parse(work));
+
+const HOME_STRIP_SLUGS = [
+  'colour-grade-comparison',
+  'wedding-reel-sangeet',
+  'prewedding-film-riverside',
+  'wedding-teaser-reception',
+  'prewedding-film-first-light',
+];
+
+export const homeStripWorks = HOME_STRIP_SLUGS.map((slug) => {
+  const match = works.find((work) => work.slug === slug);
+  if (!match) throw new Error(`homeStripWorks references unknown slug: ${slug}`);
+  return match;
+});

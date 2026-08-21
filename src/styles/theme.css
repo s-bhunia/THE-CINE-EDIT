@@ -59,3 +59,11 @@
     display: none;
   }
 }
+
+@layer base {
+  [data-grade='active'] main img,
+  [data-grade='active'] main video,
+  [data-grade='active'] main canvas {
+    filter: url('#grade-media-filter');
+  }
+}

@@ -1,6 +1,7 @@
 import { site } from '@/content/site';
 import { SlateForm } from './SlateForm';
 import { Meta } from '@/components/seo/Meta';
+import { WhatsAppLink } from '@/components/ui/WhatsAppLink';
 
 export function ContactRoute() {
   return (
@@ -29,6 +30,11 @@ export function ContactRoute() {
 
         <div className="metadata text-safelight border border-safelight px-4 py-2 self-start rounded-sm mt-4">
           {site.availability}
+        </div>
+
+        <div className="flex flex-col gap-2 border-t border-ink-line pt-6 metadata text-sm">
+          <span className="text-bone-dim uppercase">Prefer to message</span>
+          <WhatsAppLink label={`WhatsApp — ${site.contact.whatsapp}`} />
         </div>
       </div>
 

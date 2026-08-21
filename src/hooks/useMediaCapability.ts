@@ -34,6 +34,7 @@ function detect(): MediaCapability {
     return {
       allowMotion: false,
       allowVideoPreview: false,
+      allowHeroVideo: false,
       allowWebgl: false,
       tier: 'base',
     };
@@ -50,18 +51,19 @@ function detect(): MediaCapability {
   const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
 
   const allowMotion = !prefersReducedMotion;
-  const allowVideoPreview =
+  const allowHeroVideo =
     allowMotion &&
     !isDataSaver &&
     !isSlowConnection &&
-    document.visibilityState === 'visible' &&
-    !(isLowHardware && isCoarsePointer);
+    document.visibilityState === 'visible';
+  const allowVideoPreview = allowHeroVideo && !(isLowHardware && isCoarsePointer);
   const allowWebgl =
     allowMotion && !isDataSaver && supportsWebgl2() && probeVerdict !== false;
 
   return {
     allowMotion,
     allowVideoPreview,
+    allowHeroVideo,
     allowWebgl,
     tier: allowWebgl ? 'high' : 'base',
   };

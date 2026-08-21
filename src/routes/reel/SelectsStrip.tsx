@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { works } from '@/content/works';
+import { homeStripWorks } from '@/content/works';
 import { MicroPreview } from '@/components/media/MicroPreview';
 import { useDragScroll } from '@/hooks/useDragScroll';
 
@@ -22,7 +22,7 @@ export function SelectsStrip() {
           dragging ? 'md:cursor-grabbing snap-none select-none' : ''
         }`}
       >
-        {works.slice(0, 5).map((work) => (
+        {homeStripWorks.map((work) => (
           <a
             href={`/work/${work.slug}`}
             key={work.slug}
