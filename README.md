@@ -2,7 +2,7 @@
 
 Portfolio site for Manas Bera, a wedding and cinematic film editor based in West Bengal, India. It is a single-page React application built around self-hosted video: an NLE-inspired interface where the work itself (teasers, pre-wedding films, highlights reels, colour grades) is the primary content.
 
-Production origin: `https://thecineedit.vercel.app`
+Production origin: `https://the-cine-edit.vercel.app`
 
 ## Stack
 

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ORIGIN = 'https://thecineedit.vercel.app';
+const ORIGIN = 'https://the-cine-edit.vercel.app';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const worksFile = path.join(root, 'src', 'content', 'works.ts');

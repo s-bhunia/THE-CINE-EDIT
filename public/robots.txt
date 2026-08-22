@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://thecineedit.vercel.app/sitemap.xml
+Sitemap: https://the-cine-edit.vercel.app/sitemap.xml

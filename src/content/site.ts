@@ -27,7 +27,7 @@ const SiteSchema = z.object({
 
 export const site = SiteSchema.parse({
   name: 'THE CINE EDIT',
-  origin: 'https://thecineedit.vercel.app',
+  origin: 'https://the-cine-edit.vercel.app',
   tagline: 'Great Footage Deserves Great Editing.',
   editor: 'Manas Bera',
   contact: {
