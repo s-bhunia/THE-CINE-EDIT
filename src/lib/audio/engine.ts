@@ -1,15 +1,33 @@
 export type SpriteId =
   'tape-click' | 'reel-spool' | 'shutter' | 'sub-thud' | 'slate-clap';
 
-const SPRITES: Record<SpriteId, readonly [number, number]> = {
-  'tape-click': [0, 0.15],
-  'reel-spool': [0.5, 0.4],
-  shutter: [1.2, 0.2],
-  'sub-thud': [1.8, 0.35],
-  'slate-clap': [2.5, 0.2],
+interface Sprite {
+  start: number;
+  duration: number;
+  /**
+   * Per-shot make-up gain. scripts/build-ui-sprite.mjs attenuates every clip
+   * before mixing and runs reel-spool through a narrow bandpass, which left the
+   * five shots 25 dB apart in the sprite. Peaks measured off the decoded buffer
+   * are tape-click -26.9, reel-spool -31.8, shutter -7.0, sub-thud -25.9 and
+   * slate-clap -11.8 dBFS. (Do not re-measure these with `ffmpeg -ss` on the
+   * Opus file: the seek lands on a packet boundary and reads several dB hot.)
+   *
+   * These land the transition whoosh and the camera shots near -5 dBFS peak at
+   * unity bus gain, with the interface clicks deliberately a little under, so
+   * nothing clips and the page-change sound is actually audible.
+   */
+  gain: number;
+}
+
+const SPRITES: Record<SpriteId, Sprite> = {
+  'tape-click': { start: 0, duration: 0.15, gain: 7.5 },
+  'reel-spool': { start: 0.5, duration: 0.4, gain: 20 },
+  shutter: { start: 1.2, duration: 0.2, gain: 1.2 },
+  'sub-thud': { start: 1.8, duration: 0.35, gain: 6 },
+  'slate-clap': { start: 2.5, duration: 0.2, gain: 1.8 },
 };
 
-const SPRITE_BUS_NOMINAL_GAIN = 0.5;
+const SPRITE_BUS_NOMINAL_GAIN = 1;
 const SPRITE_BUS_DUCKED_GAIN = SPRITE_BUS_NOMINAL_GAIN * 0.25;
 const DUCK_TIME_CONSTANT = 0.08;
 const MEDIA_RAMP_TIME_CONSTANT = 0.13;
@@ -140,11 +158,16 @@ class AudioEngine {
     if (!ctx || !bus || !buffer) return;
     if (ctx.state === 'suspended') void ctx.resume();
 
-    const [start, duration] = SPRITES[spriteId];
+    const sprite = SPRITES[spriteId];
+    const shot = ctx.createGain();
+    shot.gain.value = sprite.gain;
+    shot.connect(bus);
+
     const source = ctx.createBufferSource();
     source.buffer = buffer;
-    source.connect(bus);
-    source.start(0, start, duration);
+    source.connect(shot);
+    source.onended = () => shot.disconnect();
+    source.start(0, sprite.start, sprite.duration);
   };
 
   toggleMute = () => {

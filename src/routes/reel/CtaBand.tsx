@@ -9,7 +9,7 @@ export function CtaBand() {
           to="/contact"
           className="font-display text-4xl md:text-6xl text-bone hover:text-safelight transition-colors tracking-tight"
         >
-          Book the edit ▸
+          Book the slot ▸
         </Link>
         <span className="metadata text-safelight">{site.availability}</span>
       </div>

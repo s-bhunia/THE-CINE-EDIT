@@ -1,5 +1,6 @@
 import { useCallback, useId, useRef } from 'react';
-import type { PuckPosition } from '@/lib/grade/wheels';
+import { cn } from '@/lib/cn';
+import { WHEEL_SIZE_PX, type PuckPosition } from '@/lib/grade/wheels';
 
 interface GradeWheelProps {
   label: string;
@@ -7,6 +8,7 @@ interface GradeWheelProps {
   onChange: (next: PuckPosition) => void;
   onReset: () => void;
   animated: boolean;
+  expanded: boolean;
 }
 
 const HUE_RING =
@@ -31,6 +33,7 @@ export function GradeWheel({
   onChange,
   onReset,
   animated,
+  expanded,
 }: GradeWheelProps) {
   const discRef = useRef<HTMLDivElement>(null);
   const inputId = useId();
@@ -106,7 +109,10 @@ export function GradeWheel({
 
   return (
     <div className="flex flex-col items-center gap-1">
-      <div className="relative" style={{ width: '64px', height: '64px' }}>
+      <div
+        className="relative"
+        style={{ width: `${WHEEL_SIZE_PX}px`, height: `${WHEEL_SIZE_PX}px` }}
+      >
         <div
           aria-hidden="true"
           className="absolute inset-0 rounded-full"
@@ -229,7 +235,12 @@ export function GradeWheel({
       </div>
 
       <span
-        className="metadata uppercase bg-ink px-1 text-bone-dim opacity-0 transition-opacity duration-120 group-hover/grade:opacity-100 group-focus-within/grade:opacity-100"
+        className={cn(
+          'metadata uppercase bg-ink px-1 text-bone-dim transition-opacity duration-120',
+          expanded
+            ? 'opacity-100'
+            : 'opacity-0 group-hover/grade:opacity-100 group-focus-within/grade:opacity-100',
+        )}
         style={{ fontSize: '9px' }}
       >
         {label}

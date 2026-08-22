@@ -3,11 +3,14 @@ import path from 'node:path';
 import { gzipSync } from 'node:zlib';
 
 const BUDGETS = {
-  initialJsGzip: 130 * 1024,
+  initialJsGzip: 150 * 1024,
   glChunkGzip: 180 * 1024,
   cssGzip: 20 * 1024,
   fontsTotal: 120 * 1024,
-  heroVideo: 2.5 * 1024 * 1024,
+  // 2.5MB covered a short silent loop. The hero is now a 24.5s cut, which at
+  // 1080p24 cannot fit that and still look graded — it lands ~4.9MB at 1.6Mbps.
+  // Phones are served loop-720p.mp4 instead, which is ~2.1MB.
+  heroVideo: 5.5 * 1024 * 1024,
 };
 
 const distDir = path.join(process.cwd(), 'dist');

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
+import { PLATE_EDGE_STRENGTH, PLATE_GRAIN_STRENGTH } from './plateEffects';
 
 const VERTEX_SHADER_SOURCE = `#version 300 es
 in vec2 aPosition;
@@ -29,6 +30,8 @@ uniform float uTime;
 uniform vec2 uResolution;
 uniform vec2 uCoverScale;
 uniform vec3 uHalationColor;
+uniform float uEdgeTreatment;
+uniform float uGrain;
 
 in vec2 vUv;
 out vec4 outColor;
@@ -55,8 +58,8 @@ float luma(vec3 color) {
   return dot(color, LUMA_WEIGHTS);
 }
 
-vec3 sampleAberrated(vec2 uv, float radiusSquared) {
-  float offset = ABERRATION_BASE + radiusSquared * ABERRATION_RADIAL;
+vec3 sampleAberrated(vec2 uv, float radiusSquared, float strength) {
+  float offset = (ABERRATION_BASE + radiusSquared * ABERRATION_RADIAL) * strength;
   return vec3(
     texture(uTexture, uv + vec2(offset, 0.0)).r,
     texture(uTexture, uv).g,
@@ -83,18 +86,20 @@ vec3 gatherHalation(vec2 uv) {
 void main() {
   vec2 centered = vUv - 0.5;
   float radiusSquared = dot(centered, centered);
-  vec2 plateUv = centered * (1.0 + radiusSquared * BARREL_STRENGTH) * uCoverScale + 0.5;
+  vec2 plateUv =
+    centered * (1.0 + radiusSquared * BARREL_STRENGTH * uEdgeTreatment) * uCoverScale + 0.5;
 
-  vec3 color = sampleAberrated(plateUv, radiusSquared);
+  vec3 color = sampleAberrated(plateUv, radiusSquared, uEdgeTreatment);
 
   float overexposed = clamp((luma(color) - HALATION_THRESHOLD) * HALATION_MIX, 0.0, 1.0);
   color = mix(color, uHalationColor, overexposed);
   color += gatherHalation(plateUv) * uHalationColor * HALATION_BLOOM_GAIN;
 
   float grainSeed = mod(uTime, GRAIN_CYCLE) * GRAIN_SCROLL;
-  color += (hash(vUv * uResolution + grainSeed) - 0.5) * GRAIN_STRENGTH;
+  color += (hash(vUv * uResolution + grainSeed) - 0.5) * GRAIN_STRENGTH * uGrain;
 
-  color *= smoothstep(VIGNETTE_INNER, VIGNETTE_OUTER, length(centered * 2.0));
+  float vignette = smoothstep(VIGNETTE_INNER, VIGNETTE_OUTER, length(centered * 2.0));
+  color *= mix(1.0, vignette, uEdgeTreatment);
 
   outColor = vec4(color, 1.0);
 }
@@ -197,6 +202,8 @@ function createResources(gl: WebGL2RenderingContext): PlateResources | null {
   const coverScaleLocation = gl.getUniformLocation(program, 'uCoverScale');
   const textureLocation = gl.getUniformLocation(program, 'uTexture');
   const halationLocation = gl.getUniformLocation(program, 'uHalationColor');
+  const edgeLocation = gl.getUniformLocation(program, 'uEdgeTreatment');
+  const grainLocation = gl.getUniformLocation(program, 'uGrain');
   const positionLocation = gl.getAttribLocation(program, 'aPosition');
 
   if (
@@ -205,6 +212,8 @@ function createResources(gl: WebGL2RenderingContext): PlateResources | null {
     !coverScaleLocation ||
     !textureLocation ||
     !halationLocation ||
+    !edgeLocation ||
+    !grainLocation ||
     positionLocation < 0
   ) {
     console.warn('FilmPlate: shader interface did not resolve');
@@ -243,6 +252,8 @@ function createResources(gl: WebGL2RenderingContext): PlateResources | null {
   gl.useProgram(program);
   gl.uniform1i(textureLocation, 0);
   gl.uniform3f(halationLocation, HALATION_R, HALATION_G, HALATION_B);
+  gl.uniform1f(edgeLocation, PLATE_EDGE_STRENGTH);
+  gl.uniform1f(grainLocation, PLATE_GRAIN_STRENGTH);
   gl.disable(gl.DEPTH_TEST);
   gl.disable(gl.CULL_FACE);
   gl.clearColor(0, 0, 0, 0);

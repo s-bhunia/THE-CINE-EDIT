@@ -2,6 +2,7 @@ import { site } from '@/content/site';
 import { about } from '@/content/about';
 import { Meta } from '@/components/seo/Meta';
 import { ReelStage } from '@/components/gl/ReelStage';
+import { SocialRow } from '@/components/ui/SocialRow';
 
 export function AboutRoute() {
   return (
@@ -18,27 +19,23 @@ export function AboutRoute() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-6 relative">
         <div className="lg:col-span-5 lg:col-start-2">
           <div className="aspect-[4/5] bg-ink-raise overflow-hidden relative">
-            <picture>
-              <source
-                type="image/avif"
-                srcSet="/assets/about/portrait.avif 640w, /assets/about/portrait-1080.avif 1080w"
-                sizes="(min-width: 1024px) 40vw, 100vw"
-              />
-              <source
-                type="image/webp"
-                srcSet="/assets/about/portrait.webp 640w, /assets/about/portrait-1080.webp 1080w"
-                sizes="(min-width: 1024px) 40vw, 100vw"
-              />
-              <img
-                src="/assets/about/portrait-1080.webp"
-                alt={site.editor}
-                width={1080}
-                height={1350}
-                loading="lazy"
-                decoding="async"
-                className="w-full h-full object-cover"
-              />
-            </picture>
+            {/*
+             * The webp derivatives this used to offer were dropped when the
+             * portrait was re-exported, so the whole webp <source> set and the
+             * <img src> fallback pointed at 404s. AVIF is the only encode that
+             * exists.
+             */}
+            <img
+              src="/assets/about/portrait-1080.avif"
+              srcSet="/assets/about/portrait.avif 640w, /assets/about/portrait-1080.avif 1080w"
+              sizes="(min-width: 1024px) 40vw, 100vw"
+              alt={site.editor}
+              width={1080}
+              height={1350}
+              loading="lazy"
+              decoding="async"
+              className="w-full h-full object-cover"
+            />
 
             <div className="absolute -bottom-12 -right-12 w-64 h-64 z-20 hidden lg:block pointer-events-none">
               <ReelStage />
@@ -56,6 +53,8 @@ export function AboutRoute() {
               <p key={idx}>{paragraph}</p>
             ))}
           </div>
+
+          <SocialRow />
 
           <blockquote className="my-12">
             <p className="font-display text-4xl lg:text-5xl text-bone leading-tight tracking-tight">

@@ -1,10 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import Lenis from 'lenis';
 import { useLocation } from 'react-router';
+import { registerLenis, scrollToTop } from '@/lib/scroll';
 
 export function useLenis() {
   const location = useLocation();
-  const lenisRef = useRef<Lenis | null>(null);
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia(
@@ -19,7 +19,7 @@ export function useLenis() {
       gestureOrientation: 'vertical',
       smoothWheel: true,
     });
-    lenisRef.current = lenis;
+    registerLenis(lenis);
 
     let frame = requestAnimationFrame(function raf(time: number) {
       lenis.raf(time);
@@ -28,19 +28,15 @@ export function useLenis() {
 
     return () => {
       cancelAnimationFrame(frame);
+      registerLenis(null);
       lenis.destroy();
-      lenisRef.current = null;
     };
   }, []);
 
   useEffect(() => {
-    // Lenis owns the scroll position while it is running, so window.scrollTo gets
-    // animated straight back to where it was. Go through Lenis when it is there.
-    const lenis = lenisRef.current;
-    if (lenis) {
-      lenis.scrollTo(0, { immediate: true, force: true });
-    } else {
-      window.scrollTo(0, 0);
-    }
-  }, [location.pathname]);
+    // A hash names an in-page target and whoever handles it owns the scroll
+    // position, so resetting to the top here would just fight it.
+    if (location.hash) return;
+    scrollToTop();
+  }, [location.pathname, location.hash]);
 }

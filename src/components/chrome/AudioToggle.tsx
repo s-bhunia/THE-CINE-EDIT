@@ -66,7 +66,8 @@ export function AudioToggle() {
         const muted = audioEngine.toggleMute();
         if (!muted) audioEngine.play('tape-click');
       }}
-      className="fixed bottom-6 right-6 z-50 flex items-end gap-[2px] h-5 cursor-pointer mix-blend-difference group px-2 py-1"
+      /* right-24 clears the WhatsApp button, which owns the bottom-right corner. */
+      className="fixed bottom-6 right-24 z-50 flex items-end gap-[2px] h-5 cursor-pointer mix-blend-difference group px-2 py-1"
       aria-pressed={!isMuted}
       aria-label={isMuted ? 'Turn interface sound on' : 'Turn interface sound off'}
     >

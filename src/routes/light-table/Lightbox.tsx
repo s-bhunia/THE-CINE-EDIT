@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { audioEngine } from '@/lib/audio/engine';
+import { useModalLayer } from '@/hooks/useModalLayer';
 
 interface LightboxItem {
   src: string;
@@ -18,6 +19,8 @@ export function Lightbox({ items, index, onClose, onNavigate }: LightboxProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const touchStartX = useRef<number | null>(null);
   const triggerRef = useRef<Element | null>(null);
+
+  useModalLayer();
 
   useEffect(() => {
     triggerRef.current = document.activeElement;

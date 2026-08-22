@@ -3,6 +3,8 @@ import { motion, useScroll, useTransform } from 'motion/react';
 import { ClipBlock } from './ClipBlock';
 import { experience } from '@/content';
 import { Meta } from '@/components/seo/Meta';
+import { useIsPhone } from '@/hooks/useIsPhone';
+import { MobileExperience } from '@/routes/reel/mobile/MobileExperience';
 
 const ORIGIN_YEAR = 2018;
 const TIMELINE_END_YEAR = 2026;
@@ -20,47 +22,46 @@ const PALETTE = [
   { color: 'bg-bone/10', borderColor: 'border-bone' },
 ];
 
+const META = (
+  <Meta
+    title="Experience"
+    description="Career timeline across wedding films, cinematic work, festival awards, and tools."
+    breadcrumbs={[
+      { name: 'Reel', path: '/' },
+      { name: 'Experience', path: '/experience' },
+    ]}
+  />
+);
+
 export function TimelineRoute() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeClip, setActiveClip] = useState<string | null>(null);
+  const isPhone = useIsPhone();
 
   const { scrollYProgress } = useScroll({ target: containerRef });
   const x = useTransform(scrollYProgress, [0, 1], ['0%', '-75%']);
 
   const activeEntry = experience.find((entry) => entry.id === activeClip);
 
+  // The scrub timeline needs 400vh of travel to drive it, which on a phone meant
+  // four screens of empty scroll wrapped around a nested scroller. Phones get the
+  // same stacked clips the single page uses, in normal flow.
+  if (isPhone) {
+    return (
+      <div className="pt-24 pb-12 min-h-screen">
+        {META}
+        <h1 className="sr-only">Experience</h1>
+        <MobileExperience />
+      </div>
+    );
+  }
+
   return (
     <div ref={containerRef} className="relative h-[400vh] w-full">
-      <Meta
-        title="Experience"
-        description="Career timeline across wedding films, cinematic work, festival awards, and tools."
-        breadcrumbs={[
-          { name: 'Reel', path: '/' },
-          { name: 'Experience', path: '/experience' },
-        ]}
-      />
+      {META}
       <h1 className="sr-only">Experience</h1>
       <div className="sticky top-0 h-screen w-full overflow-hidden bg-ink pt-24 flex flex-col">
-        <div className="block md:hidden overflow-y-auto px-6 pb-24">
-          <div className="border-b border-ink-line mb-8 pb-4">
-            <span className="metadata text-bone-dim">SEQ 07 — EXPERIENCE</span>
-          </div>
-          <div className="flex flex-col gap-4">
-            {experience.map((entry) => (
-              <div
-                key={entry.id}
-                className="p-4 bg-ink-raise border-l-4 border-safelight"
-              >
-                <span className="metadata text-bone-dim">
-                  {entry.startYear} - {entry.endYear ?? 'PRESENT'}
-                </span>
-                <h3 className="text-xl text-bone mt-2">{entry.title}</h3>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="hidden md:flex flex-col h-full w-full">
+        <div className="flex flex-col h-full w-full">
           <div className="flex-none h-12 border-b border-ink-line flex items-end pl-64">
             <motion.div style={{ x }} className="flex min-w-[300vw]">
               {[2018, 2020, 2022, 2024, 2026].map((year) => (

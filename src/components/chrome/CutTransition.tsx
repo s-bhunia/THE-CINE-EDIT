@@ -19,7 +19,11 @@ export function CutTransition() {
 
     if (prefersReducedMotion) return;
 
-    audioEngine.play('reel-spool');
+    // The engine arms on the first pointerdown and init() is async, so calling
+    // play() straight away dropped the whoosh on the first navigation of a visit
+    // — decode had not finished yet. init() is idempotent and hands back the
+    // in-flight promise, so this only ever waits once.
+    void audioEngine.init().then(() => audioEngine.play('reel-spool'));
     setIsCutting(true);
 
     const timer = setTimeout(() => {

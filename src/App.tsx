@@ -5,6 +5,7 @@ import { Footer } from '@/components/chrome/Footer';
 import { SafeAreaGuides } from '@/components/chrome/SafeAreaGuides';
 import { Timecode } from '@/components/chrome/Timecode';
 import { AudioToggle } from '@/components/chrome/AudioToggle';
+import { WhatsAppFab } from '@/components/chrome/WhatsAppFab';
 import { CutTransition } from '@/components/chrome/CutTransition';
 import { useLenis } from '@/hooks/useLenis';
 import { initAnalytics, trackPageview } from '@/lib/analytics';
@@ -41,6 +42,7 @@ export default function App() {
       <Header />
       <Timecode />
       <AudioToggle />
+      <WhatsAppFab />
 
       <main
         id="main-content"

@@ -2,9 +2,15 @@
 @import './fonts.css';
 
 @theme {
-  --color-ink: #0a0908;
-  --color-ink-raise: #131110;
-  --color-ink-line: #262220;
+  /*
+   * The ground is a dark brown rather than a near-black. Warmth was nudged up
+   * across all three ink steps together so the borders and raised panels keep
+   * the same relationship to the background they always had — bone-dim still
+   * clears 5.7:1 on ink. Keep index.html's inline background-color in step.
+   */
+  --color-ink: #140e0a;
+  --color-ink-raise: #211812;
+  --color-ink-line: #3a2b20;
   --color-bone: #e9e2d6;
   --color-bone-dim: #948c81;
   --color-safelight: #d4703a;
@@ -57,6 +63,131 @@
 
   .no-scrollbar::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/*
+ * Hero title. Each letter condenses out of a blurred, over-scaled haze rather
+ * than sliding in, so the word reads as resolving out of smoke; a single
+ * halation-tinted puff drifts behind the line to sell it without a particle
+ * system. One shot on mount only — HeroPlate renders the plain title outright
+ * when motion is not allowed, so these never attach for those visitors.
+ */
+@layer components {
+  @keyframes hero-letter-form {
+    from {
+      opacity: 0;
+      filter: blur(15px);
+      transform: translate3d(0, 0.3em, 0) scale(1.5);
+    }
+    60% {
+      opacity: 1;
+      filter: blur(4px);
+    }
+    to {
+      opacity: 1;
+      filter: blur(0);
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+
+  /*
+   * backwards, not both: the delay needs the opening keyframe, but holding the
+   * closing one would leave a blur(0px) filter on all eleven letters for the
+   * life of the page, and that pins each one into its own composited layer and
+   * softens subpixel antialiasing on the display face.
+   */
+  .hero-letter {
+    animation: hero-letter-form 940ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+
+  @keyframes hero-title-haze {
+    from {
+      opacity: 0;
+      transform: scale(0.65);
+    }
+    30% {
+      opacity: 0.45;
+    }
+    to {
+      opacity: 0;
+      transform: scale(1.85);
+    }
+  }
+
+  /* Transparent at rest so the puff cannot linger once the animation ends. */
+  .hero-title-haze {
+    position: absolute;
+    inset: -55% -12%;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(
+      58% 68% at 24% 50%,
+      var(--color-halation),
+      transparent 72%
+    );
+    filter: blur(26px);
+    animation: hero-title-haze 2000ms ease-out;
+  }
+}
+
+@layer base {
+  /* A full-screen overlay owns the viewport; see useModalLayer. */
+  :root[data-modal-open] [data-site-header] {
+    display: none;
+  }
+}
+
+/*
+ * Scroll-in reveals, driven by RiseIn. Transitions rather than keyframes so the
+ * end state is the element's own styles and nothing lingers on the compositor
+ * once a reveal has played. The delay comes in per element as --rise-delay,
+ * which is how a section staggers its children off one observer.
+ */
+@layer components {
+  .rise,
+  .gate {
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: var(--rise-delay, 0ms);
+    will-change: opacity, transform;
+  }
+
+  .rise {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
+    transition-property: opacity, transform;
+    transition-duration: 560ms;
+  }
+
+  .rise[data-in='true'] {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Wipes open from the bottom edge and settles out of an overscan. */
+  .gate {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+    transform: scale(1.07);
+    transition-property: opacity, clip-path, transform;
+    transition-duration: 420ms, 760ms, 940ms;
+  }
+
+  .gate[data-in='true'] {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise,
+    .gate {
+      opacity: 1;
+      clip-path: none;
+      transform: none;
+      transition: none;
+      will-change: auto;
+    }
   }
 }
 

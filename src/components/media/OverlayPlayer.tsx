@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { audioEngine } from '@/lib/audio/engine';
 import { useMediaCapability } from '@/hooks/useMediaCapability';
+import { useModalLayer } from '@/hooks/useModalLayer';
 import { toTimecode } from '@/lib/format/timecode';
 
 const TIMECODE_FPS = 24;
@@ -63,6 +64,8 @@ export function OverlayPlayer({
   const triggerRef = useRef<Element | null>(null);
   const lastRevealRef = useRef(0);
   const { allowMotion } = useMediaCapability();
+
+  useModalLayer();
 
   const [duration, setDuration] = useState(durationSeconds);
   const [currentTime, setCurrentTime] = useState(0);
@@ -143,20 +146,6 @@ export function OverlayPlayer({
     return () => {
       audioEngine.rampMediaGain(1);
       if (triggerRef.current instanceof HTMLElement) triggerRef.current.focus();
-    };
-  }, []);
-
-  useEffect(() => {
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-    const previousOverflow = document.body.style.overflow;
-    const previousPadding = document.body.style.paddingRight;
-
-    document.body.style.overflow = 'hidden';
-    if (scrollbarWidth > 0) document.body.style.paddingRight = `${scrollbarWidth}px`;
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.body.style.paddingRight = previousPadding;
     };
   }, []);
 
