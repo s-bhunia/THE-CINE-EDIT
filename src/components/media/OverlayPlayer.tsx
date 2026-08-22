@@ -67,7 +67,7 @@ export function OverlayPlayer({
   const [duration, setDuration] = useState(durationSeconds);
   const [currentTime, setCurrentTime] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(() => audioEngine.isMediaMuted());
   const [volume, setVolume] = useState(1);
   const [buffered, setBuffered] = useState<BufferedSpan[]>([]);
   const [fullscreen, setFullscreen] = useState(false);
@@ -108,6 +108,7 @@ export function OverlayPlayer({
     if (!video) return;
     video.muted = next;
     setMuted(next);
+    audioEngine.setMediaMuted(next);
     audioEngine.rampMediaGain(next ? 0 : 1);
     audioEngine.play('tape-click');
   }, []);
@@ -137,7 +138,7 @@ export function OverlayPlayer({
     triggerRef.current = document.activeElement;
     closeRef.current?.focus();
     audioEngine.play('reel-spool');
-    audioEngine.rampMediaGain(0);
+    audioEngine.rampMediaGain(audioEngine.isMediaMuted() ? 0 : 1);
 
     return () => {
       audioEngine.rampMediaGain(1);
@@ -216,10 +217,16 @@ export function OverlayPlayer({
     video.addEventListener('ended', handlePause);
     video.addEventListener('volumechange', handleVolumeChange);
 
-    video.muted = true;
+    video.muted = audioEngine.isMediaMuted();
     video.preload = 'metadata';
     video.load();
-    void video.play().catch(() => {});
+    void video.play().catch(() => {
+      // The player only opens from a click, so sound is normally allowed. If the
+      // browser refuses anyway, fall back to a muted start rather than a stalled
+      // film — the volumechange handler surfaces the unmute affordance.
+      video.muted = true;
+      void video.play().catch(() => {});
+    });
 
     return () => {
       video.removeEventListener('loadedmetadata', handleLoadedMetadata);

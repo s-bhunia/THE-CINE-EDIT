@@ -51,11 +51,12 @@ function detect(): MediaCapability {
   const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
 
   const allowMotion = !prefersReducedMotion;
-  const allowHeroVideo =
-    allowMotion &&
-    !isDataSaver &&
-    !isSlowConnection &&
-    document.visibilityState === 'visible';
+  // Deliberately not gated on document.visibilityState. Deciding here whether the
+  // <video> element exists at all meant a document that started hidden — a
+  // background tab, a prerender, an in-app webview such as WhatsApp or Instagram —
+  // rendered the poster and nothing else. Playback is paused and resumed on
+  // visibilitychange by LoopVideo and useFilmPlateGl instead.
+  const allowHeroVideo = allowMotion && !isDataSaver && !isSlowConnection;
   const allowVideoPreview = allowHeroVideo && !(isLowHardware && isCoarsePointer);
   const allowWebgl =
     allowMotion && !isDataSaver && supportsWebgl2() && probeVerdict !== false;
@@ -103,14 +104,12 @@ export function useMediaCapability(): MediaCapability {
 
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     motionQuery.addEventListener('change', resync);
-    document.addEventListener('visibilitychange', resync);
 
     probeFrameRate(resync);
     resync();
 
     return () => {
       motionQuery.removeEventListener('change', resync);
-      document.removeEventListener('visibilitychange', resync);
     };
   }, []);
 

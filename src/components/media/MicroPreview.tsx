@@ -68,7 +68,7 @@ export function MicroPreview({ id, previewSrc, posterSrc }: MicroPreviewProps) {
         style={{ opacity: isActive ? 0 : 1 }}
       />
 
-      {allowVideoPreview && isActive && (
+      {allowVideoPreview && isActive && previewSrc && (
         <video
           ref={videoRef}
           src={previewSrc}

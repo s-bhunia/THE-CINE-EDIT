@@ -1,14 +1,28 @@
+import { useEffect, useRef } from 'react';
 import { useParams, Navigate } from 'react-router';
 import { works } from '@/content/works';
 import { Meta } from '@/components/seo/Meta';
 import { AdjacentClips } from './AdjacentClips';
 import { analyticsEvents } from '@/lib/analytics';
+import { audioEngine } from '@/lib/audio/engine';
 import { toIsoDate } from '@/lib/format/date';
 
 export function CaseStudyRoute() {
   const { slug } = useParams();
+  const videoRef = useRef<HTMLVideoElement>(null);
   const workIndex = works.findIndex((w) => w.slug === slug);
   const work = works[workIndex];
+
+  // Films start with sound on, and whichever way the visitor sets it here is the
+  // way the next player they open starts.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = audioEngine.isMediaMuted();
+    const remember = () => audioEngine.setMediaMuted(video.muted);
+    video.addEventListener('volumechange', remember);
+    return () => video.removeEventListener('volumechange', remember);
+  }, [slug]);
 
   if (!work) return <Navigate to="/404" replace />;
 
@@ -57,6 +71,7 @@ export function CaseStudyRoute() {
         }}
       >
         <video
+          ref={videoRef}
           src={work.videoSrc}
           controls
           preload="none"

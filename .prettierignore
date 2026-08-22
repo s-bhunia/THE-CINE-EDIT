@@ -4,3 +4,4 @@ public
 node_modules
 playwright-report
 test-results
+.build-manifest.json

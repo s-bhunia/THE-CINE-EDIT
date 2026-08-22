@@ -1,10 +1,12 @@
-import { useSearchParams } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { works } from '@/content/works';
 import { MicroPreview } from '@/components/media/MicroPreview';
 import { fadeInUp } from '@/lib/motion/variants';
 import { toMinutesSeconds } from '@/lib/format/duration';
 import { Meta } from '@/components/seo/Meta';
+
+const MotionLink = motion.create(Link);
 
 const FILTERS = [
   'All',
@@ -58,8 +60,8 @@ export function SelectsRoute() {
       >
         <AnimatePresence mode="popLayout">
           {filteredWorks.map((work) => (
-            <motion.a
-              href={`/work/${work.slug}`}
+            <MotionLink
+              to={`/work/${work.slug}`}
               key={work.slug}
               layout
               {...fadeInUp}
@@ -81,7 +83,7 @@ export function SelectsRoute() {
                   {work.venue} — {work.year} — {toMinutesSeconds(work.runtimeSeconds)}
                 </span>
               </div>
-            </motion.a>
+            </MotionLink>
           ))}
         </AnimatePresence>
       </motion.div>

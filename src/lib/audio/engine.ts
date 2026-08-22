@@ -17,19 +17,32 @@ const PREFS_KEY = 'audioPrefs';
 
 type MutedListener = (muted: boolean) => void;
 
-function readStoredMute(): boolean {
-  if (typeof localStorage === 'undefined') return false;
+interface AudioPrefs {
+  /** Interface sound — the sprite bus behind the AudioToggle. */
+  muted: boolean;
+  /** Film sound in the overlay and case-study players. */
+  mediaMuted: boolean;
+}
+
+/** Both buses are on unless the visitor has turned one off. */
+const DEFAULT_PREFS: AudioPrefs = { muted: false, mediaMuted: false };
+
+function readStoredPrefs(): AudioPrefs {
+  if (typeof localStorage === 'undefined') return { ...DEFAULT_PREFS };
   try {
     const raw = localStorage.getItem(PREFS_KEY);
-    if (!raw) return false;
+    if (!raw) return { ...DEFAULT_PREFS };
     const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed === 'object' && parsed !== null && 'muted' in parsed) {
-      return Boolean((parsed as { muted: unknown }).muted);
-    }
+    if (typeof parsed !== 'object' || parsed === null) return { ...DEFAULT_PREFS };
+    const record = parsed as Record<string, unknown>;
+    return {
+      muted: 'muted' in record ? Boolean(record.muted) : DEFAULT_PREFS.muted,
+      mediaMuted:
+        'mediaMuted' in record ? Boolean(record.mediaMuted) : DEFAULT_PREFS.mediaMuted,
+    };
   } catch {
-    return false;
+    return { ...DEFAULT_PREFS };
   }
-  return false;
 }
 
 class AudioEngine {
@@ -41,12 +54,14 @@ class AudioEngine {
   private levelBuffer: Uint8Array<ArrayBuffer> | null = null;
   private sources = new WeakMap<HTMLMediaElement, MediaElementAudioSourceNode>();
   private audibleMedia = new Set<HTMLMediaElement>();
-  private muted = readStoredMute();
+  private prefs = readStoredPrefs();
   private ready = false;
   private pending: Promise<void> | null = null;
   private listeners = new Set<MutedListener>();
 
-  isMuted = () => this.muted;
+  isMuted = () => this.prefs.muted;
+
+  isMediaMuted = () => this.prefs.mediaMuted;
 
   isDucking = () => this.audibleMedia.size > 0;
 
@@ -58,7 +73,19 @@ class AudioEngine {
   };
 
   private emit() {
-    for (const listener of this.listeners) listener(this.muted);
+    for (const listener of this.listeners) listener(this.prefs.muted);
+  }
+
+  private persist() {
+    try {
+      localStorage.setItem(PREFS_KEY, JSON.stringify(this.prefs));
+    } catch {}
+  }
+
+  private wake() {
+    void this.init().then(() => {
+      if (this.ctx?.state === 'suspended') void this.ctx.resume();
+    });
   }
 
   init = (): Promise<void> => {
@@ -106,7 +133,7 @@ class AudioEngine {
   };
 
   play = (spriteId: SpriteId) => {
-    if (!this.ready || this.muted) return;
+    if (!this.ready || this.prefs.muted) return;
     const ctx = this.ctx;
     const bus = this.spriteBus;
     const buffer = this.spriteBuffer;
@@ -121,17 +148,21 @@ class AudioEngine {
   };
 
   toggleMute = () => {
-    this.muted = !this.muted;
-    try {
-      localStorage.setItem(PREFS_KEY, JSON.stringify({ muted: this.muted }));
-    } catch {}
-    if (!this.muted) {
-      void this.init().then(() => {
-        if (this.ctx?.state === 'suspended') void this.ctx.resume();
-      });
-    }
+    this.prefs.muted = !this.prefs.muted;
+    this.persist();
+    if (!this.prefs.muted) this.wake();
     this.emit();
-    return this.muted;
+    return this.prefs.muted;
+  };
+
+  /**
+   * Remembers whether film sound is on so the choice carries across routes and
+   * visits. Kept separate from `muted`, which only covers interface sound.
+   */
+  setMediaMuted = (next: boolean) => {
+    this.prefs.mediaMuted = next;
+    this.persist();
+    if (!next) this.wake();
   };
 
   private setSpriteBusGain(target: number) {

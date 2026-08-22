@@ -11,10 +11,12 @@ const BUDGETS = {
 };
 
 const distDir = path.join(process.cwd(), 'dist');
-const manifestPath = path.join(distDir, '.vite', 'manifest.json');
+// vite.config.ts lifts the manifest out of dist at the end of the build so the
+// deployment does not serve it.
+const manifestPath = path.join(process.cwd(), '.build-manifest.json');
 
 if (!fs.existsSync(manifestPath)) {
-  console.error('No dist/.vite/manifest.json found. Run `pnpm build` first.');
+  console.error('No .build-manifest.json found. Run `pnpm build` first.');
   process.exit(1);
 }
 

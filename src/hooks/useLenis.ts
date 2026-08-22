@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import Lenis from 'lenis';
 import { useLocation } from 'react-router';
 
 export function useLenis() {
   const location = useLocation();
+  const lenisRef = useRef<Lenis | null>(null);
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia(
@@ -18,20 +19,28 @@ export function useLenis() {
       gestureOrientation: 'vertical',
       smoothWheel: true,
     });
+    lenisRef.current = lenis;
 
-    function raf(time: number) {
+    let frame = requestAnimationFrame(function raf(time: number) {
       lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-
-    requestAnimationFrame(raf);
+      frame = requestAnimationFrame(raf);
+    });
 
     return () => {
+      cancelAnimationFrame(frame);
       lenis.destroy();
+      lenisRef.current = null;
     };
   }, []);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    // Lenis owns the scroll position while it is running, so window.scrollTo gets
+    // animated straight back to where it was. Go through Lenis when it is there.
+    const lenis = lenisRef.current;
+    if (lenis) {
+      lenis.scrollTo(0, { immediate: true, force: true });
+    } else {
+      window.scrollTo(0, 0);
+    }
   }, [location.pathname]);
 }

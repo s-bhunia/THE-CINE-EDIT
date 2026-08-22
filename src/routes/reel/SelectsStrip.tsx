@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { Link } from 'react-router';
 import { homeStripWorks } from '@/content/works';
 import { MicroPreview } from '@/components/media/MicroPreview';
 import { useDragScroll } from '@/hooks/useDragScroll';
@@ -23,8 +24,8 @@ export function SelectsStrip() {
         }`}
       >
         {homeStripWorks.map((work) => (
-          <a
-            href={`/work/${work.slug}`}
+          <Link
+            to={`/work/${work.slug}`}
             key={work.slug}
             className="group flex-none w-[80vw] md:w-[520px] snap-center"
           >
@@ -44,7 +45,7 @@ export function SelectsStrip() {
                 {work.venue} — {work.year}
               </span>
             </div>
-          </a>
+          </Link>
         ))}
       </div>
     </section>
