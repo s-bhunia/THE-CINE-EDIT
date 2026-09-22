@@ -16,6 +16,18 @@
   --color-safelight: #d4703a;
   --color-halation: #f2a65a;
   --color-grade-teal: #24484c;
+  /*
+   * The curtains. Cool, where everything else on the page is warm — a panel
+   * sliding over footage has to read as a different plane, and separating by
+   * hue does that at any brightness, where a step in value alone did not. It
+   * is also the grade the work itself speaks in: warm frame, cool shadow.
+   * Swap for #262019 if a single warm family is wanted instead.
+   */
+  --color-curtain: #1d1410;
+  /* The exact red baked into /assets/brand/mark.png — kept distinct from
+     --color-safelight (the UI accent) so the boot loader's cut-flash matches
+     the logo it's staged around, not the rest of the interface. */
+  --color-cine-red: #ff0000;
 
   --font-display: 'Fraunces Variable', serif;
   --font-interface: 'Instrument Sans Variable', sans-serif;
@@ -98,7 +110,7 @@
    * softens subpixel antialiasing on the display face.
    */
   .hero-letter {
-    animation: hero-letter-form 940ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    animation: hero-letter-form 1500ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
   }
 
   @keyframes hero-title-haze {
@@ -139,6 +151,49 @@
 }
 
 /*
+ * The wordmark lockup. One element for the whole site: it is set at title size
+ * over the hero and settles into the nav bar once the plate is scrolled past.
+ *
+ * font-size rather than transform, because scaling type up rasterises it soft,
+ * and the em-based gap and tracking then follow the size for free. The reflow
+ * that costs is contained to a fixed header, so it can never reach the document.
+ */
+@layer components {
+  .wordmark {
+    /*
+     * Fluid rather than stepped: expanded, the lockup shares the header row
+     * with the nav, so at 375px a fixed 3xl would run into the menu button.
+     * The lower bound is what still fits beside it on the narrowest phone.
+     */
+    --wordmark-size: clamp(1.15rem, 4.6vw, 3.75rem);
+    --wordmark-track: 0.06em;
+    gap: 0.35em;
+    font-size: var(--wordmark-size);
+    letter-spacing: var(--wordmark-track);
+    transition:
+      font-size 420ms cubic-bezier(0.16, 1, 0.3, 1),
+      letter-spacing 420ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Docked: the size the header has always used. */
+  .wordmark[data-expanded='false'] {
+    --wordmark-size: 0.875rem;
+    --wordmark-track: 0.1em;
+  }
+
+  /* In em, so it tracks the size through the transition without its own rule. */
+  .wordmark-mark {
+    height: 1.14em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wordmark {
+      transition: none;
+    }
+  }
+}
+
+/*
  * Scroll-in reveals, driven by RiseIn. Transitions rather than keyframes so the
  * end state is the element's own styles and nothing lingers on the compositor
  * once a reveal has played. The delay comes in per element as --rise-delay,
@@ -156,7 +211,7 @@
     opacity: 0;
     transform: translate3d(0, 20px, 0);
     transition-property: opacity, transform;
-    transition-duration: 560ms;
+    transition-duration: 900ms;
   }
 
   .rise[data-in='true'] {
@@ -170,7 +225,7 @@
     clip-path: inset(0 0 100% 0);
     transform: scale(1.07);
     transition-property: opacity, clip-path, transform;
-    transition-duration: 420ms, 760ms, 940ms;
+    transition-duration: 700ms, 1200ms, 1500ms;
   }
 
   .gate[data-in='true'] {
@@ -191,7 +246,433 @@
   }
 }
 
+/*
+ * Boot splash (AppLoader). The mark wipes open like light finding the gate,
+ * a tally-light glow keeps it alive while assets are still loading, and the
+ * exit is a red playhead sweeping full-bleed — the same "cut" the site uses
+ * for every route change afterward (see CutTransition), so the loader reads
+ * as the first cut rather than a separate idiom.
+ */
+@layer components {
+  /*
+   * A self-playing keyframe animation rather than a transition triggered by a
+   * JS-flipped attribute: it starts the instant the element paints, with no
+   * requestAnimationFrame round-trip to get stuck on if the tab isn't the
+   * foreground one (rAF is throttled hard on background tabs; setTimeout,
+   * which the rest of this component's sequencing uses, is not).
+   */
+  @keyframes app-loader-mark-wipe {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
+  .app-loader-mark {
+    animation: app-loader-mark-wipe 640ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes app-loader-glow {
+    0%,
+    100% {
+      opacity: 0.35;
+    }
+    50% {
+      opacity: 0.75;
+    }
+  }
+
+  .app-loader-glow {
+    animation: app-loader-glow 1500ms ease-in-out infinite;
+  }
+
+  @keyframes app-loader-rule-fill {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  .app-loader-rule-fill {
+    transform-origin: left center;
+    animation: app-loader-rule-fill 1550ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  /*
+   * Seeded on the mark's own red bar (see AppLoader's RED_BAR fractions), not
+   * a second line: invisible and pixel-matched to it at rest, then it grows
+   * tall in place before spreading wide, so the cut reads as that bar
+   * stretching rather than a new element appearing.
+   */
+  .app-loader-seed {
+    opacity: 0;
+    transform: scaleX(1) scaleY(1);
+    transform-origin: center;
+    transition: opacity 80ms linear;
+  }
+
+  .app-loader-seed[data-stage='grow'] {
+    opacity: 1;
+    transform: scaleX(1) scaleY(var(--grow-scale, 60));
+    transition:
+      opacity 80ms linear,
+      transform 240ms cubic-bezier(0.7, 0, 0.84, 0);
+  }
+
+  .app-loader-seed[data-stage='spread'] {
+    opacity: 1;
+    transform: scaleX(var(--spread-scale, 80)) scaleY(var(--grow-scale, 60));
+    transition: transform 200ms cubic-bezier(0.7, 0, 0.84, 0);
+  }
+}
+
+/*
+ * The home page is staged as a run of acts. Each act pins a scene; a curtain
+ * then rises over it, holds full-screen while its text plays, and lifts away —
+ * by which point the next act's scene is already pinned behind it.
+ *
+ * All of it is layout: sticky positioning plus a one-viewport overlap between
+ * acts. Nothing is driven by script, which is exactly why it reverses on the
+ * way back up and costs nothing per frame.
+ *
+ * Do not add content-visibility or contain to .act or .pin. Containment opens
+ * a stacking context and changes the intrinsic height the sticky range is
+ * measured from, which breaks both the layering and the hand-off.
+ */
+@layer components {
+  /* Relative, and deliberately no z-index — every scene and curtain has to
+     resolve against the others in one root stacking context. */
+  .act {
+    position: relative;
+  }
+
+  /* The overlap. This is what leaves the next scene pinned behind a curtain
+     that is still on screen, instead of following it up from below. */
+  .act + .act {
+    margin-top: calc(-1 * var(--vh));
+  }
+
+  /* height, not min-height: iOS Safari ignores min-height on sticky elements. */
+  .pin {
+    position: sticky;
+    top: 0;
+    height: var(--vh);
+  }
+
+  .scene {
+    z-index: 1;
+  }
+
+  .curtain {
+    z-index: 2;
+    background: var(--color-curtain);
+    /* Lenis lands on subpixels; without this a hairline of the scene beneath
+       shows along the curtain's leading edge. */
+    margin-top: -1px;
+  }
+
+  /*
+   * The leading edge. Fill alone was never going to carry this — what the eye
+   * tracks as a panel moves is its edge, so the curtain gets a safelight rule
+   * and a short bleed under it. Once the curtain is pinned this sits at the
+   * very top of the viewport, behind the header, and is not seen again until
+   * the panel moves.
+   */
+  .curtain::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 64px;
+    z-index: 5;
+    pointer-events: none;
+    border-top: 2px solid var(--color-safelight);
+    background: linear-gradient(to bottom, rgb(212 112 58 / 0.18), transparent);
+  }
+
+  /* svh rather than dvh, because dvh remeasures as the mobile URL bar retracts
+     and would resize the pins and the overlap mid-scroll. The strip that svh
+     leaves bare is painted by this backdrop instead of by resizing anything. */
+  .curtain::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    bottom: calc(100svh - 100lvh);
+    background: inherit;
+    z-index: -1;
+  }
+
+  /* How long a curtain holds full-screen before it lifts. */
+  .dwell {
+    height: calc(var(--dwell, 0.6) * var(--vh));
+  }
+
+  /*
+   * What keeps an espresso panel from reading as a flat swatch: a safelight
+   * bleed from the top corner, a field of defocused highlights behind the type,
+   * and the same grain the rest of the site is shot through.
+   */
+  .curtain-dressing {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    background: radial-gradient(
+      120% 86% at 14% -6%,
+      rgb(242 166 90 / 0.08),
+      transparent 62%
+    );
+  }
+
+  .curtain-dressing::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url('/noise.svg');
+    opacity: 0.22;
+    mix-blend-mode: overlay;
+  }
+
+  /*
+   * Lit off-centre with a falloff to nothing, so each one reads as a sphere
+   * rather than a flat disc, then blurred until it is atmosphere. Only the
+   * transform animates — the blur rasterises once and is then just moved.
+   */
+  .curtain-orb {
+    position: absolute;
+    left: var(--orb-x);
+    top: var(--orb-y);
+    width: var(--orb-size);
+    height: var(--orb-size);
+    border-radius: 50%;
+    background: radial-gradient(
+      circle at 34% 30%,
+      rgb(242 166 90 / 0.5),
+      rgb(212 112 58 / 0.16) 46%,
+      transparent 70%
+    );
+    filter: blur(calc(var(--orb-size) * 0.14));
+    animation: curtain-orb-drift var(--orb-dur) ease-in-out var(--orb-delay) infinite
+      alternate;
+  }
+
+  /* A couple of cooler ones, so the field is not all the same lamp. */
+  .curtain-orb[data-warm='false'] {
+    background: radial-gradient(
+      circle at 34% 30%,
+      rgb(233 226 214 / 0.24),
+      rgb(148 140 129 / 0.1) 46%,
+      transparent 70%
+    );
+  }
+
+  @keyframes curtain-orb-drift {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+    to {
+      transform: translate3d(2.5vmin, -3.5vmin, 0);
+    }
+  }
+
+  /* Fewer blurred layers where the GPU budget is smallest. */
+  @media (max-width: 640px) {
+    .curtain-orb:nth-child(n + 4) {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .curtain-orb {
+      animation: none;
+    }
+  }
+
+  /* With no Lenis and no motion, the whole conceit collapses to a plain stack. */
+  @media (prefers-reduced-motion: reduce) {
+    .act + .act {
+      margin-top: 0;
+    }
+
+    /*
+     * min-height, not height: the panels have to keep their viewport presence
+     * or children sized h-full collapse to nothing, but a fixed height would
+     * clip a text panel that runs long once nothing is pinned to hold it.
+     */
+    .pin {
+      position: static;
+      height: auto;
+      min-height: var(--vh);
+      overflow: visible;
+    }
+
+    .curtain {
+      margin-top: 0;
+    }
+
+    /* Nothing slides, so there is no edge to track. */
+    .curtain::before,
+    .curtain::after,
+    .dwell {
+      display: none;
+    }
+  }
+}
+
+/* The selects board. Tiles soften with distance from the middle so the board
+   reads as a field with a focus rather than a flat contact sheet. */
+@layer components {
+  /*
+   * Depth of field: tiles fall out of focus toward the edges of the board, and
+   * the one under the cursor pulls sharp. Both the blur and the opacity are
+   * driven by values baked in at render, so nothing is measured per frame.
+   *
+   * Sharpening is keyed to data-hot rather than :hover, because the panel is
+   * covered by a full-bleed link and the tiles never receive hover at all.
+   */
+  .select-tile {
+    border-radius: calc(2px + var(--edge, 0) * 22px);
+    opacity: calc(1 - var(--edge, 0) * 0.3);
+    filter: blur(calc(var(--edge, 0) * 3.5px));
+    transition:
+      opacity 320ms cubic-bezier(0.16, 1, 0.3, 1),
+      transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* `none`, not blur(0): a zero blur is still a filter pass, and this is the
+     one tile with a video playing in it. Sharpening lands instantly; the
+     opacity and scale carry the transition. */
+  .select-tile[data-hot='true'] {
+    opacity: 1;
+    filter: none;
+    transform: scale(1.03);
+    z-index: 1;
+  }
+
+  /* The unlit part of the board sits well back, so there is a clear focus
+     around the cursor rather than an evenly visible contact sheet. */
+  .select-vignette {
+    background: radial-gradient(
+      34vmax at var(--mx, 50%) var(--my, 50%),
+      transparent 8%,
+      rgb(20 14 10 / 0.82) 78%
+    );
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .select-tile {
+      filter: none;
+      transition: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .select-tile {
+      transition: none;
+    }
+  }
+}
+
+/* The stills reel. --turn is written on the panel root by useReelTransport,
+   from the same scalar that moves the strip. */
+@layer components {
+  .reel-wheel-spin {
+    transform-box: fill-box;
+    transform-origin: 50% 50%;
+    rotate: var(--turn, 0deg);
+  }
+
+  /* Frames come out from behind the wheel rather than starting at the edge. */
+  .reel-strip {
+    mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      #000 14%,
+      #000 94%,
+      transparent 100%
+    );
+  }
+
+  /* Tilted away toward the reel, so the film has somewhere to be spooling from. */
+  .reel-stage {
+    perspective: 1200px;
+    perspective-origin: 10% 50%;
+  }
+
+  .reel-tilt {
+    transform: rotateY(-13deg) rotateZ(-0.6deg);
+    transform-origin: left center;
+    transform-style: preserve-3d;
+  }
+
+  /* The film itself: a black base carrying the frames, with a sprocket rail
+     above and below. */
+  .reel-film {
+    background: #070605;
+    box-shadow:
+      inset 0 1px 0 rgb(233 226 214 / 0.06),
+      inset 0 -1px 0 rgb(233 226 214 / 0.06);
+  }
+
+  /*
+   * Perforations. A repeating gradient rather than elements, because a real
+   * rail across two passes of the strip is well over a hundred holes and none
+   * of them need to be in the DOM.
+   */
+  .reel-rail {
+    height: 18px;
+    background-image: repeating-linear-gradient(
+      to right,
+      transparent 0 13px,
+      rgb(240 236 228 / 0.88) 13px 22px
+    );
+    background-size: 22px 9px;
+    background-repeat: repeat-x;
+    background-position: center;
+  }
+
+  .reel-frame {
+    /* The curl, set per frame by StillsScene. */
+    transform: rotate(var(--tilt, 0deg));
+    transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+    outline: 1px solid rgb(233 226 214 / 0.07);
+    outline-offset: -1px;
+  }
+
+  .reel-frame:hover {
+    transform: rotate(var(--tilt, 0deg)) scale(1.14) translateY(-0.5vmin);
+    z-index: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reel-wheel-spin {
+      rotate: 0deg;
+    }
+
+    .reel-tilt {
+      transform: none;
+    }
+
+    .reel-frame {
+      transition: none;
+    }
+
+    /* The curl is static, so it stays; only the hover move is dropped. */
+    .reel-frame:hover {
+      transform: rotate(var(--tilt, 0deg));
+    }
+  }
+}
+
 @layer base {
+  :root {
+    --vh: 100svh;
+  }
+
   [data-grade='active'] main img,
   [data-grade='active'] main video,
   [data-grade='active'] main canvas {

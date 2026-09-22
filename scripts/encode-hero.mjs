@@ -49,9 +49,9 @@ function extractPoster() {
 
 encodeSilentLoop({
   width: 1920,
-  crf: 27,
-  maxrate: '1800k',
-  bufsize: '3600k',
+  crf: 22,
+  maxrate: '3200k',
+  bufsize: '6400k',
   level: '4.2',
   outputName: 'loop-1080p.mp4',
 });

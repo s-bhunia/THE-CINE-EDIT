@@ -1,7 +1,10 @@
-import { Suspense, lazy, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useRef, useState } from 'react';
 import { LoopVideo } from '@/components/media/LoopVideo';
 import { CssFallbackGrain } from '@/components/gl/CssFallbackGrain';
 import { useMediaCapability } from '@/hooks/useMediaCapability';
+import { useIntroDone } from '@/hooks/useIntroDone';
+import { useScrolledPast } from '@/hooks/useScrolledPast';
+import { heroMedia } from '@/content/heroMedia';
 import { site } from '@/content/site';
 import { showreel } from '@/content/showreel';
 import { analyticsEvents } from '@/lib/analytics';
@@ -14,29 +17,23 @@ const GlCanvas = lazy(() =>
   import('@/components/gl/GlCanvas').then((m) => ({ default: m.GlCanvas })),
 );
 
-const LETTER_STAGGER_MS = 58;
-
 export function HeroPlate() {
   const [showReel, setShowReel] = useState(false);
   const [heroVideo, setHeroVideo] = useState<HTMLVideoElement | null>(null);
   const [plateLive, setPlateLive] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const { allowWebgl, allowMotion } = useMediaCapability();
-
-  // Split per word first so a line break can only ever land between words —
-  // per-letter spans in a flex row would happily break "CINE" in half.
-  const titleWords = useMemo(() => {
-    let letter = 0;
-    return site.name.split(' ').map((word) => ({
-      word,
-      chars: [...word].map((char) => ({ char, index: letter++ })),
-    }));
-  }, []);
+  const { allowWebgl } = useMediaCapability();
+  const introDone = useIntroDone();
+  // By here the first curtain has pinned over the plate, so there is nothing
+  // to see and no reason to keep decoding frames or running the GL pass.
+  const covered = useScrolledPast('90vh');
 
   return (
     <section
       data-hero-plate
-      className="relative w-full h-screen overflow-hidden bg-ink-raise"
+      // min-h as well as h-full: with reduced motion the pin above is auto
+      // height, and a percentage height against that resolves to nothing.
+      className="relative w-full h-full min-h-[100svh] overflow-hidden bg-ink-raise"
     >
       {/*
        * Full-bleed: the plate used to be an inset 2.39:1 frame floating in 5%
@@ -45,11 +42,13 @@ export function HeroPlate() {
        */}
       <div className="absolute inset-0">
         <LoopVideo
-          h264Src="/assets/hero/loop-1080p.mp4"
-          h264SrcNarrow="/assets/hero/loop-720p.mp4"
+          h264Src={heroMedia.loop1080}
+          h264SrcNarrow={heroMedia.loop720}
           posterSrc="/assets/hero/poster.avif"
           onVideoElement={setHeroVideo}
           plateHidden={plateLive}
+          startWhen={introDone}
+          paused={covered}
         />
 
         {allowWebgl && heroVideo ? (
@@ -61,49 +60,14 @@ export function HeroPlate() {
         )}
 
         {/*
-         * Top padding clears the fixed header — full-bleed had put the hero
-         * wordmark directly under the header's identical one, close enough that
-         * the two read as a single smeared lockup. Bottom padding clears the
-         * corner furniture: the WhatsApp button, the audio meter, and on a phone
-         * the row of grade looks.
+         * The title itself is the header's lockup, which sits large over this
+         * plate and settles into the nav bar on scroll — see Wordmark. What is
+         * left here is the document's heading for assistive tech and the bottom
+         * row, whose padding clears the corner furniture: the WhatsApp button,
+         * the audio meter, and on a phone the row of grade looks.
          */}
-        <div className="absolute inset-0 z-10 flex flex-col justify-between px-6 md:px-10 pt-20 md:pt-24 pb-32 md:pb-24 bg-ink/10">
-          <div className="relative">
-            {allowMotion && <span aria-hidden="true" className="hero-title-haze" />}
-            {/*
-             * Set in the mono face with wide tracking to match the CE wordmark,
-             * rather than the Fraunces display serif the other headings use.
-             */}
-            <h1 className="relative font-mono text-3xl md:text-6xl text-bone tracking-[0.06em]">
-              {allowMotion ? (
-                <>
-                  <span className="sr-only">{site.name}</span>
-                  <span aria-hidden="true">
-                    {titleWords.map(({ word, chars }, wordIndex) => (
-                      <span key={`${word}-${wordIndex}`}>
-                        {wordIndex > 0 ? ' ' : null}
-                        <span className="inline-block whitespace-nowrap">
-                          {chars.map(({ char, index }) => (
-                            <span
-                              key={index}
-                              className="hero-letter inline-block"
-                              style={{
-                                animationDelay: `${index * LETTER_STAGGER_MS}ms`,
-                              }}
-                            >
-                              {char}
-                            </span>
-                          ))}
-                        </span>
-                      </span>
-                    ))}
-                  </span>
-                </>
-              ) : (
-                site.name
-              )}
-            </h1>
-          </div>
+        <div className="absolute inset-0 z-10 flex flex-col justify-end px-6 md:px-10 pt-20 md:pt-24 pb-32 md:pb-24 bg-ink/10">
+          <h1 className="sr-only font-mono tracking-[0.06em]">{site.name}</h1>
 
           <div className="flex justify-end">
             <button

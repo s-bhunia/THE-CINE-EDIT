@@ -4,7 +4,7 @@ import { ClipBlock } from './ClipBlock';
 import { experience } from '@/content';
 import { Meta } from '@/components/seo/Meta';
 import { useIsPhone } from '@/hooks/useIsPhone';
-import { MobileExperience } from '@/routes/reel/mobile/MobileExperience';
+import { PhoneTimeline } from './PhoneTimeline';
 
 const ORIGIN_YEAR = 2018;
 const TIMELINE_END_YEAR = 2026;
@@ -51,7 +51,7 @@ export function TimelineRoute() {
       <div className="pt-24 pb-12 min-h-screen">
         {META}
         <h1 className="sr-only">Experience</h1>
-        <MobileExperience />
+        <PhoneTimeline />
       </div>
     );
   }

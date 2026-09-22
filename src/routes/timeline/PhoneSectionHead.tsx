@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { RiseIn } from '@/components/ui/RiseIn';
 
-interface MobileSectionHeadProps {
+interface PhoneSectionHeadProps {
   /** Slate line, e.g. "SEQ 01 — SELECTS". */
   slate: string;
   title: string;
@@ -15,12 +15,12 @@ interface MobileSectionHeadProps {
  * repeated marker is what tells you a new part has started, so it is heavier
  * here than the small label the desktop routes use.
  */
-export function MobileSectionHead({
+export function PhoneSectionHead({
   slate,
   title,
   shown = true,
   children,
-}: MobileSectionHeadProps) {
+}: PhoneSectionHeadProps) {
   return (
     <div className="px-6">
       <RiseIn shown={shown}>

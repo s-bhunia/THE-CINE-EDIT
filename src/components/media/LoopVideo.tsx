@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMediaCapability } from '@/hooks/useMediaCapability';
 
 interface LoopVideoProps {
@@ -10,9 +10,16 @@ interface LoopVideoProps {
   narrowBreakpoint?: string;
   onVideoElement?: (element: HTMLVideoElement | null) => void;
   plateHidden?: boolean;
+  /** Held false while the boot splash covers the screen, so the loop is not
+   *  already mid-shot by the time anyone can see it. */
+  startWhen?: boolean;
+  /** True once something opaque is over the plate. Pausing also idles the GL
+   *  plate, which only runs its rAF while the video is playing. */
+  paused?: boolean;
 }
 
 const REVEAL_EVENTS = ['loadeddata', 'canplay', 'playing'] as const;
+const HAVE_METADATA = 1;
 const HAVE_CURRENT_DATA = 2;
 
 export function LoopVideo({
@@ -24,10 +31,38 @@ export function LoopVideo({
   narrowBreakpoint = '(max-width: 768px)',
   onVideoElement,
   plateHidden = false,
+  startWhen = true,
+  paused = false,
 }: LoopVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const { allowHeroVideo } = useMediaCapability();
   const [showVideo, setShowVideo] = useState(false);
+
+  const attemptPlay = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const started = video.play();
+    if (!started) return;
+    void started.catch(() => {
+      // A refusal here is usually a backgrounded tab rather than a starved
+      // buffer, and reloading would throw away data already held — with no
+      // autoplay attribute left to fall back on, nothing would restart it.
+      // The visibilitychange handler below covers that case, so only force a
+      // fetch when the media genuinely has nothing to play.
+      if (video.readyState >= HAVE_CURRENT_DATA) return;
+      video.preload = 'auto';
+      video.load();
+      video.addEventListener('canplay', () => void video.play().catch(() => {}), {
+        once: true,
+      });
+    });
+  }, []);
+
+  // Read through a ref so a change of heart about playback never re-runs the
+  // effect below — its cleanup strips the src, which would throw away the
+  // buffer and hand GlCanvas a null element mid-scene.
+  const startWhenRef = useRef(startWhen);
+  startWhenRef.current = startWhen;
 
   useEffect(() => {
     const video = videoRef.current;
@@ -37,21 +72,11 @@ export function LoopVideo({
     const reveal = () => setShowVideo(true);
     for (const eventName of REVEAL_EVENTS) video.addEventListener(eventName, reveal);
 
-    const attemptPlay = () => {
-      const started = video.play();
-      if (!started) return;
-      void started.catch(() => {
-        video.preload = 'auto';
-        video.load();
-      });
-    };
-
     if (video.readyState >= HAVE_CURRENT_DATA) reveal();
-    attemptPlay();
 
     const syncWithVisibility = () => {
       if (document.visibilityState === 'visible') {
-        attemptPlay();
+        if (startWhenRef.current) attemptPlay();
       } else {
         video.pause();
       }
@@ -66,7 +91,32 @@ export function LoopVideo({
       video.load();
       onVideoElement?.(null);
     };
-  }, [allowHeroVideo, onVideoElement]);
+  }, [allowHeroVideo, onVideoElement, attemptPlay]);
+
+  // Playback is deliberately not an autoplay attribute: it starts here, rewound,
+  // once the splash has lifted, and stops again whenever the plate is covered.
+  // The rewind is guarded so it only happens on that first start — scrolling
+  // back up to an uncovered hero should resume, not jump to the head of the clip.
+  const hasStarted = useRef(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !allowHeroVideo || !startWhen) return;
+
+    if (paused) {
+      video.pause();
+      return;
+    }
+
+    video.preload = 'auto';
+    if (!hasStarted.current) {
+      hasStarted.current = true;
+      if (video.readyState >= HAVE_METADATA && video.currentTime > 0) {
+        video.currentTime = 0;
+      }
+    }
+    attemptPlay();
+  }, [allowHeroVideo, startWhen, paused, attemptPlay]);
 
   return (
     <div className="relative w-full h-full bg-ink">
@@ -81,7 +131,6 @@ export function LoopVideo({
       {allowHeroVideo && (
         <video
           ref={videoRef}
-          autoPlay
           loop
           muted
           playsInline

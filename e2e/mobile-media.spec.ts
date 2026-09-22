@@ -48,7 +48,9 @@ test('hero falls back to the poster with reduced motion and never errors', async
   await page.waitForLoadState('networkidle');
 
   expect(await heroState(page)).toBeNull();
-  await expect(page.locator('main img').first()).toBeVisible();
+  // The plate's own poster, rather than `main img` — the staged page now has
+  // images in later panels too, and the first of them can be off-screen.
+  await expect(page.locator('[data-hero-plate] img').first()).toBeVisible();
 });
 
 test('a case study video is present and loadable on mobile', async ({ page }) => {

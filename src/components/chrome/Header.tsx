@@ -1,22 +1,24 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router';
-import { site } from '@/content/site';
-import { useIsPhone } from '@/hooks/useIsPhone';
-import { scrollToSection, scrollToTop } from '@/lib/scroll';
+import { useScrolledPast } from '@/hooks/useScrolledPast';
+import { scrollToTop } from '@/lib/scroll';
+import { Wordmark } from '@/components/chrome/Wordmark';
 
-const SCRIM_AFTER_PX = 24;
+const SCRIM_AFTER = '24px';
+/** Far enough in that a nudge of the wheel does not shrink the title. */
+const DOCK_AFTER = '25vh';
 
 /**
- * `to` is the standalone route; `section` is the matching anchor on the phone
- * single-page layout. On a phone the menu scrolls within that page instead of
- * navigating away, which is the whole point of stitching it together.
+ * Every link routes, at every width. The home page stages its own run of these
+ * sections, but the full set of each lives on its own page — the panels are the
+ * trailer, these are the feature.
  */
 const LINKS = [
-  { to: '/work', section: '#work', label: 'Selects' },
-  { to: '/stills', section: '#stills', label: 'Stills' },
-  { to: '/experience', section: '#experience', label: 'Timeline' },
-  { to: '/about', section: '#about', label: 'About' },
-  { to: '/contact', section: '#contact', label: 'Contact' },
+  { to: '/work', label: 'Selects' },
+  { to: '/stills', label: 'Stills' },
+  { to: '/experience', label: 'Timeline' },
+  { to: '/about', label: 'About' },
+  { to: '/contact', label: 'Contact' },
 ];
 
 const linkClassName =
@@ -31,46 +33,12 @@ interface IndicatorRect {
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const sentinel = document.createElement('div');
-    sentinel.setAttribute('aria-hidden', 'true');
-    sentinel.style.cssText = `position:absolute;top:${SCRIM_AFTER_PX}px;left:0;width:1px;height:1px;pointer-events:none;`;
-    document.body.appendChild(sentinel);
-
-    const observer = new IntersectionObserver(
-      ([entry]) => setScrolled(!entry?.isIntersecting),
-      { threshold: 0 },
-    );
-    observer.observe(sentinel);
-
-    return () => {
-      observer.disconnect();
-      sentinel.remove();
-    };
-  }, []);
+  const scrolled = useScrolledPast(SCRIM_AFTER);
+  const pastHero = useScrolledPast(DOCK_AFTER);
 
   const navRef = useRef<HTMLElement>(null);
   const [indicator, setIndicator] = useState<IndicatorRect | null>(null);
   const { pathname } = useLocation();
-  const isPhone = useIsPhone();
-  const onSinglePage = isPhone && pathname === '/';
-
-  // On the phone single page the target already exists, so scroll straight to it
-  // and skip the route change entirely; the URL still gets the hash so the entry
-  // is shareable and Back behaves.
-  const jumpToSection = useCallback(
-    (section: string) => (event: React.MouseEvent) => {
-      if (!onSinglePage) return;
-      if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
-      if (!scrollToSection(section)) return;
-      event.preventDefault();
-      window.history.replaceState(null, '', section);
-      setMenuOpen(false);
-    },
-    [onSinglePage],
-  );
 
   const syncIndicator = useCallback(() => {
     const nav = navRef.current;
@@ -95,12 +63,23 @@ export function Header() {
     return () => observer.disconnect();
   }, [syncIndicator]);
 
-  const opaque = scrolled || menuOpen;
+  const isHome = pathname === '/';
+  const expanded = isHome && !pastHero;
+
+  /*
+   * On the home page the scrim waits for the wordmark rather than for the first
+   * 24px of scroll: filling the bar in while the title is still at full size
+   * paints a very thick slab across the top. The delay below lets the resize
+   * finish first, and is dropped on the way back so the bar clears out of the
+   * way before the title grows again.
+   */
+  const opaque = (isHome ? pastHero : scrolled) || menuOpen;
+  const scrimDelay = isHome && opaque && !menuOpen ? 'delay-[420ms]' : 'delay-0';
 
   return (
     <header
       data-site-header
-      className={`fixed top-0 left-0 right-0 z-50 text-bone px-6 py-6 transition-colors duration-120 ${
+      className={`fixed top-0 left-0 right-0 z-50 text-bone px-6 py-6 transition-colors duration-120 ${scrimDelay} ${
         opaque
           ? 'bg-ink border-b border-ink-line'
           : 'bg-transparent border-b border-transparent'
@@ -112,21 +91,12 @@ export function Header() {
           className={linkClassName}
           onClick={() => {
             setMenuOpen(false);
-            // Already on the single page, so the router sees no path change and
-            // would leave the visitor wherever they had scrolled to.
-            if (onSinglePage) scrollToTop();
+            // Already home, so the router sees no path change and would leave
+            // the visitor wherever down the run they had scrolled to.
+            if (pathname === '/') scrollToTop();
           }}
         >
-          <span className="inline-flex items-center gap-2.5">
-            <img
-              src="/assets/brand/mark-64.png"
-              alt=""
-              width={64}
-              height={67}
-              className="h-4 w-auto flex-none"
-            />
-            {site.name}
-          </span>
+          <Wordmark expanded={expanded} />
         </NavLink>
 
         <nav ref={navRef} className="hidden md:flex relative gap-3">
@@ -168,12 +138,9 @@ export function Header() {
           {LINKS.map((link) => (
             <NavLink
               key={link.to}
-              to={onSinglePage ? `/${link.section}` : link.to}
+              to={link.to}
               className={linkClassName}
-              onClick={(event) => {
-                jumpToSection(link.section)(event);
-                setMenuOpen(false);
-              }}
+              onClick={() => setMenuOpen(false)}
             >
               {link.label}
             </NavLink>

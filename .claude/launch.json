@@ -14,6 +14,19 @@
       "runtimeArgs": ["run", "dev"],
       "port": 5173,
       "autoPort": true
+    },
+    {
+      "name": "cutting-room-vite-npx",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite"],
+      "port": 5174,
+      "autoPort": true
+    },
+    {
+      "name": "cutting-room-preview-npx",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "preview", "--port", "4173"],
+      "port": 4173
     }
   ]
 }

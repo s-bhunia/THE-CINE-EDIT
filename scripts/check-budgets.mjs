@@ -7,10 +7,10 @@ const BUDGETS = {
   glChunkGzip: 180 * 1024,
   cssGzip: 20 * 1024,
   fontsTotal: 120 * 1024,
-  // 2.5MB covered a short silent loop. The hero is now a 24.5s cut, which at
-  // 1080p24 cannot fit that and still look graded — it lands ~4.9MB at 1.6Mbps.
-  // Phones are served loop-720p.mp4 instead, which is ~2.1MB.
-  heroVideo: 5.5 * 1024 * 1024,
+  // Re-encoded at ~2.9Mbps (from 1.6Mbps) because 1080p at the old bitrate was
+  // visibly soft on desktop — it now lands ~9MB. Phones still get loop-720p.mp4
+  // instead, unchanged at ~2.1MB.
+  heroVideo: 9.5 * 1024 * 1024,
 };
 
 const distDir = path.join(process.cwd(), 'dist');

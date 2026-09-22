@@ -13,12 +13,15 @@ const SiteSchema = z.object({
     whatsappLink: z.string(),
     instagram: z.string(),
     instagramLink: z.string().url(),
+    facebook: z.string(),
+    facebookLink: z.string().url(),
     location: z.string(),
     locationLink: z.string(),
   }),
   availability: z.string(),
   positioning: z.object({
     statement: z.string(),
+    answer: z.string(),
     attribution: z.string(),
   }),
   stats: z.object({
@@ -40,16 +43,20 @@ export const site = SiteSchema.parse({
     whatsappLink: 'https://wa.me/918348262443',
     instagram: '@the_cine_edit',
     instagramLink: 'https://www.instagram.com/the_cine_edit/',
+    facebook: 'The Cine Edit',
+    facebookLink: 'https://www.facebook.com/profile.php?id=61572163490173',
     location: 'Club more, chhatreswar mandir, Chhatri, Egra, West Bengal 721429',
     locationLink: 'https://maps.app.goo.gl/uzqyRk58JJiypZfD6',
   },
   availability: 'BOOKING — AUTUMN 2026',
   positioning: {
     statement: 'Great Footage Deserves Great Editing.',
+    answer:
+      'Beautiful coverage is only half a film. What turns a day into something you will sit down and watch again is the cut — the order of it, the pacing, the grade, the sound. That is the whole of the work here: your footage structured around the beats that actually mattered, finished to the standard you would expect of a feature, and delivered when it was promised.',
     attribution: 'MANAS BERA, EDITOR',
   },
   stats: {
     projectsDelivered: 3000,
-    clients: 100,
+    clients: 1000,
   },
 });

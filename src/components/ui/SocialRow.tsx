@@ -2,9 +2,11 @@ import { site } from '@/content/site';
 import { cn } from '@/lib/cn';
 import { WhatsAppGlyph, WHATSAPP_GREEN } from '@/components/ui/SocialGlyphs';
 import { InstagramGlyph } from '@/components/ui/InstagramGlyph';
+import { FacebookGlyph } from '@/components/ui/FacebookGlyph';
 
 /** Instagram has no single flat brand colour; this is the mid-magenta of the gradient. */
 const INSTAGRAM_PINK = '#e1306c';
+const FACEBOOK_BLUE = '#1877f2';
 
 const LINKS = [
   {
@@ -22,6 +24,14 @@ const LINKS = [
     accessibleLabel: `The Cine Edit on Instagram — ${site.contact.instagram}`,
     color: INSTAGRAM_PINK,
     Glyph: InstagramGlyph,
+  },
+  {
+    id: 'facebook',
+    href: site.contact.facebookLink,
+    label: site.contact.facebook,
+    accessibleLabel: `The Cine Edit on Facebook — ${site.contact.facebook}`,
+    color: FACEBOOK_BLUE,
+    Glyph: FacebookGlyph,
   },
 ];
 

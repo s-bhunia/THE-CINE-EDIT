@@ -5,6 +5,7 @@ const PHONE = { width: 390, height: 844 };
 
 const WHATSAPP_URL = /wa\.me/;
 const INSTAGRAM_URL = /instagram\.com\/the_cine_edit/;
+const FACEBOOK_URL = /facebook\.com\/profile\.php\?id=61572163490173/;
 
 test.describe('hero plate', () => {
   test.use({ viewport: DESKTOP });
@@ -110,25 +111,23 @@ for (const [name, viewport] of [
   ['desktop', DESKTOP],
   ['phone', PHONE],
 ] as const) {
-  test(`about page offers whatsapp and instagram on ${name}`, async ({ page }) => {
+  test(`about page offers its social row on ${name}`, async ({ page }) => {
     await page.setViewportSize(viewport);
-    // The phone layout reaches About through the single page; desktop has a route.
-    await page.goto(name === 'phone' ? '/' : '/about');
+    // About is its own route at every width now — the home page stages the
+    // work, and routes hold the detail.
+    await page.goto('/about');
     await page.waitForLoadState('domcontentloaded');
-
-    const about = page.locator('#about');
-    if (name === 'phone') {
-      await expect(about).toBeAttached({ timeout: 25000 });
-      await about.scrollIntoViewIfNeeded();
-    }
 
     const whatsapp = page.getByRole('link', { name: /message on whatsapp/i }).first();
     const instagram = page.getByRole('link', { name: /on instagram/i }).first();
+    const facebook = page.getByRole('link', { name: /on facebook/i }).first();
 
     await expect(whatsapp).toBeVisible({ timeout: 20000 });
     await expect(whatsapp).toHaveAttribute('href', WHATSAPP_URL);
     await expect(instagram).toBeVisible();
     await expect(instagram).toHaveAttribute('href', INSTAGRAM_URL);
+    await expect(facebook).toBeVisible();
+    await expect(facebook).toHaveAttribute('href', FACEBOOK_URL);
   });
 }
 

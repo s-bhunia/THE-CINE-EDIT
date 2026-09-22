@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router';
 import { Suspense, lazy, useEffect } from 'react';
+import { AppLoader } from '@/components/chrome/AppLoader';
 import { Header } from '@/components/chrome/Header';
 import { Footer } from '@/components/chrome/Footer';
 import { SafeAreaGuides } from '@/components/chrome/SafeAreaGuides';
@@ -8,6 +9,8 @@ import { AudioToggle } from '@/components/chrome/AudioToggle';
 import { WhatsAppFab } from '@/components/chrome/WhatsAppFab';
 import { CutTransition } from '@/components/chrome/CutTransition';
 import { useLenis } from '@/hooks/useLenis';
+import { useIntroDone } from '@/hooks/useIntroDone';
+import { bootStore } from '@/store/boot';
 import { initAnalytics, trackPageview } from '@/lib/analytics';
 
 const MediaDiagnostics = lazy(() =>
@@ -20,6 +23,9 @@ export default function App() {
   useLenis();
   const location = useLocation();
   const showDiagnostics = new URLSearchParams(location.search).get('diag') === 'media';
+  // Only false for the life of a hard page load — client-side navigation keeps
+  // App mounted and swaps just the routed <Outlet>, so the splash never replays.
+  const introDone = useIntroDone();
 
   useEffect(() => {
     initAnalytics();
@@ -31,6 +37,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-ink text-bone selection:bg-safelight selection:text-ink">
+      {!introDone && <AppLoader onDone={bootStore.markIntroDone} />}
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:bg-safelight focus:text-ink focus:px-4 focus:py-2 metadata"

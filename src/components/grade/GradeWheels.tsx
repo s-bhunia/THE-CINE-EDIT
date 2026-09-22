@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMediaCapability } from '@/hooks/useMediaCapability';
+import { useScrolledPast } from '@/hooks/useScrolledPast';
 import { cn } from '@/lib/cn';
 import {
   GRADE_LOOKS,
@@ -27,14 +28,17 @@ const RING_DEGREES_PER_PIXEL = 0.06;
  * takes the labels and the reset button along with the wheels.
  */
 const EXPANDED_SCALE = WHEEL_EXPANDED_SIZE_PX / WHEEL_SIZE_PX;
-const HERO_VISIBLE_RATIO = 0.4;
 
-function heroCoverage(hero: Element) {
-  const rect = hero.getBoundingClientRect();
-  if (rect.height <= 0) return 0;
-  const onScreen = Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0);
-  return Math.max(0, onScreen) / rect.height;
-}
+/**
+ * Matches the wordmark's dock threshold in Header, deliberately: the panel and
+ * the title shrink on the same scroll, so the furniture clears out together
+ * rather than one of them sitting over the first text panel at full size.
+ *
+ * This replaced watching the hero's own intersection, which stopped working
+ * once the hero became a pinned scene — it keeps intersecting long after a
+ * curtain has covered it.
+ */
+const SHRINK_AFTER = '25vh';
 
 const GRADED_TOKENS = [
   '--color-ink',
@@ -68,25 +72,7 @@ export function GradeWheels() {
   const baseline = useRef<Map<string, string> | null>(null);
   const { allowMotion } = useMediaCapability();
 
-  // Read the hero's position up front rather than waiting for the observer's
-  // first callback: this chunk is lazy, so it can mount after the visitor has
-  // already scrolled, and starting on the wrong size would pop on the next frame.
-  const [expanded, setExpanded] = useState(() => {
-    const hero = document.querySelector('[data-hero-plate]');
-    return hero ? heroCoverage(hero) >= HERO_VISIBLE_RATIO : false;
-  });
-
-  useEffect(() => {
-    const hero = document.querySelector('[data-hero-plate]');
-    if (!hero) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => setExpanded((entry?.intersectionRatio ?? 0) >= HERO_VISIBLE_RATIO),
-      { threshold: [0, HERO_VISIBLE_RATIO, 1] },
-    );
-    observer.observe(hero);
-    return () => observer.disconnect();
-  }, []);
+  const expanded = !useScrolledPast(SHRINK_AFTER);
 
   const transfer = useMemo(() => toTransfer(wheels), [wheels]);
   const neutral = isNeutral(wheels);

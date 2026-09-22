@@ -5,6 +5,8 @@ interface DeferUntilNearProps {
   /** Reserved height before the children mount, to keep scrolling steady. */
   minHeight: number;
   rootMargin?: string;
+  /** Needed when the anchor has to fill its parent, e.g. inside a pinned scene. */
+  className?: string;
   children: ReactNode;
 }
 
@@ -17,6 +19,7 @@ interface DeferUntilNearProps {
 export function DeferUntilNear({
   minHeight,
   rootMargin = '400px 0px',
+  className,
   children,
 }: DeferUntilNearProps) {
   const anchorRef = useRef<HTMLDivElement>(null);
@@ -46,7 +49,11 @@ export function DeferUntilNear({
   }, [mounted, rootMargin]);
 
   return (
-    <div ref={anchorRef} style={mounted ? undefined : { minHeight }}>
+    <div
+      ref={anchorRef}
+      className={className}
+      style={mounted ? undefined : { minHeight }}
+    >
       {mounted ? children : null}
     </div>
   );

@@ -680,3 +680,15 @@ export const homeStripWorks = HOME_STRIP_SLUGS.map((slug) => {
   if (!match) throw new Error(`homeStripWorks references unknown slug: ${slug}`);
   return match;
 });
+
+/**
+ * The board on the home page: featured work first, then the rest in their own
+ * order, filling a 4x3 grid. There are more works than tiles, so nothing
+ * repeats — if that ever stops being true the grid simply shows fewer.
+ */
+export const GRID_COLUMNS = 4;
+export const GRID_ROWS = 3;
+
+export const gridWorks = [...works]
+  .sort((a, b) => Number(b.featured) - Number(a.featured))
+  .slice(0, GRID_COLUMNS * GRID_ROWS);

@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { gotoStaged } from './helpers';
 
 const PANEL = 'aside[aria-label="Primary colour grade"]';
 
@@ -27,8 +28,7 @@ async function dragWheel(page: Page, label: string, dx: number, dy: number) {
 }
 
 test('grade wheels appear on the reel page only', async ({ page }) => {
-  await page.goto('/');
-  await page.waitForLoadState('networkidle');
+  await gotoStaged(page);
   await expect(page.locator(PANEL)).toBeVisible();
 
   await page.goto('/work');
@@ -37,8 +37,7 @@ test('grade wheels appear on the reel page only', async ({ page }) => {
 });
 
 test('dragging a wheel regrades the palette and reset restores it', async ({ page }) => {
-  await page.goto('/');
-  await page.waitForLoadState('networkidle');
+  await gotoStaged(page);
   const before = await rootState(page);
   expect(before.grade).toBeNull();
   expect(before.ink).toBe('');
@@ -59,8 +58,7 @@ test('dragging a wheel regrades the palette and reset restores it', async ({ pag
 });
 
 test('grading applies an SVG filter to page media', async ({ page }) => {
-  await page.goto('/');
-  await page.waitForLoadState('networkidle');
+  await gotoStaged(page);
 
   const filterBefore = await page.evaluate(() => {
     const img = document.querySelector('main img');
@@ -81,8 +79,7 @@ test('grading applies an SVG filter to page media', async ({ page }) => {
 });
 
 test('the wheel housing rotates as the page scrolls', async ({ page }) => {
-  await page.goto('/');
-  await page.waitForLoadState('networkidle');
+  await gotoStaged(page);
 
   const atTop = (await rootState(page)).ring;
 
@@ -93,8 +90,7 @@ test('the wheel housing rotates as the page scrolls', async ({ page }) => {
 });
 
 test('wheels are keyboard operable and reachable', async ({ page }) => {
-  await page.goto('/');
-  await page.waitForLoadState('networkidle');
+  await gotoStaged(page);
 
   const slider = page.locator(`${PANEL} input[type="range"]`).first();
   await slider.focus();

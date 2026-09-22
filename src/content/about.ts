@@ -1,8 +1,9 @@
 import { AboutContentSchema } from './schema';
 
 export const about = AboutContentSchema.parse({
+  // The opening line lives in `philosophy`, which the page sets as the large
+  // pull quote — repeating it here printed the same sentence twice.
   bio: [
-    'I am Manas, creating emotional, cinematic wedding films that turn real moments into stories you can relive forever.',
     'Every project moves through the same discipline regardless of scale: wedding storytelling structured around the day’s real emotional beats, a professional edit pass, cinematic colour grading, and sound design — delivered on time, every time.',
   ],
   philosophy:

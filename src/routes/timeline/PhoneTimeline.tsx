@@ -1,7 +1,7 @@
 import { experience } from '@/content';
 import { RiseIn } from '@/components/ui/RiseIn';
 import { useInView } from '@/hooks/useInView';
-import { MobileSectionHead } from './MobileSectionHead';
+import { PhoneSectionHead } from './PhoneSectionHead';
 
 const TRACK_LABELS: Record<string, string> = {
   V2: 'V2 — FILMS',
@@ -19,7 +19,7 @@ function yearLabel(start: number, end: number | undefined) {
   return from === to ? `${from}` : `${from} — ${to}`;
 }
 
-export function MobileExperience() {
+export function PhoneTimeline() {
   const { ref, inView } = useInView<HTMLElement>();
 
   return (
@@ -28,10 +28,10 @@ export function MobileExperience() {
       id="experience"
       className="scroll-mt-20 py-16 border-t border-ink-line"
     >
-      <MobileSectionHead slate="SEQ 05 — EXPERIENCE" title="Timeline" shown={inView}>
+      <PhoneSectionHead slate="SEQ 05 — EXPERIENCE" title="Timeline" shown={inView}>
         The desktop version of this is a timeline you scrub. Here it is as clips stacked
         on their tracks.
-      </MobileSectionHead>
+      </PhoneSectionHead>
 
       <div className="mt-8 px-6 flex flex-col gap-3">
         {experience.map((entry, index) => (
