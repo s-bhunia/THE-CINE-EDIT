@@ -204,7 +204,6 @@
   .gate {
     transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
     transition-delay: var(--rise-delay, 0ms);
-    will-change: opacity, transform;
   }
 
   .rise {
@@ -241,7 +240,6 @@
       clip-path: none;
       transform: none;
       transition: none;
-      will-change: auto;
     }
   }
 }
@@ -288,18 +286,21 @@
     animation: app-loader-glow 1500ms ease-in-out infinite;
   }
 
-  @keyframes app-loader-rule-fill {
+  @keyframes portrait-fade-in {
     from {
-      transform: scaleX(0);
-    }
-    to {
-      transform: scaleX(1);
+      opacity: 0;
     }
   }
 
+  .portrait-fade-in {
+    animation: portrait-fade-in 900ms ease-out;
+  }
+
+  /* Driven by real asset progress (AppLoader writes scaleX). */
   .app-loader-rule-fill {
+    transform: scaleX(0);
     transform-origin: left center;
-    animation: app-loader-rule-fill 1550ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transition: transform 520ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   /*
@@ -460,6 +461,12 @@
       alternate;
   }
 
+  /* Twenty blurred layers drifting on curtains nobody can see is pure GPU
+     waste, so the drift only runs while its curtain is on screen. */
+  .curtain-dressing:not([data-live]) .curtain-orb {
+    animation-play-state: paused;
+  }
+
   /* A couple of cooler ones, so the field is not all the same lamp. */
   .curtain-orb[data-warm='false'] {
     background: radial-gradient(
@@ -539,13 +546,14 @@
     opacity: calc(1 - var(--edge, 0) * 0.3);
     filter: blur(calc(var(--edge, 0) * 3.5px));
     transition:
-      opacity 320ms cubic-bezier(0.16, 1, 0.3, 1),
-      transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+      opacity 420ms cubic-bezier(0.16, 1, 0.3, 1),
+      transform 520ms cubic-bezier(0.16, 1, 0.3, 1),
+      filter 420ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   /* `none`, not blur(0): a zero blur is still a filter pass, and this is the
-     one tile with a video playing in it. Sharpening lands instantly; the
-     opacity and scale carry the transition. */
+     one tile with a video playing in it. `none` interpolates as blur(0), so
+     the focus pull still eases rather than snapping. */
   .select-tile[data-hot='true'] {
     opacity: 1;
     filter: none;
@@ -566,12 +574,6 @@
   @media (prefers-reduced-motion: reduce) {
     .select-tile {
       filter: none;
-      transition: none;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .select-tile {
       transition: none;
     }
   }

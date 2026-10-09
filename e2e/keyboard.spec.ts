@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { gotoStaged } from './helpers';
 
 const routes = ['/', '/work', '/stills', '/experience', '/about', '/contact'];
 
@@ -22,8 +23,7 @@ test.describe('keyboard operability', () => {
     test(`${route} exposes every visible control to the Tab sequence`, async ({
       page,
     }) => {
-      await page.goto(route);
-      await page.waitForLoadState('networkidle');
+      await gotoStaged(page, route);
 
       const expected = await page.evaluate(() => {
         const selector =

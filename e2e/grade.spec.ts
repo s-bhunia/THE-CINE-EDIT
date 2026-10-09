@@ -10,7 +10,10 @@ function rootState(page: Page) {
     grade: document.documentElement.getAttribute('data-grade'),
     ink: document.documentElement.style.getPropertyValue('--color-ink'),
     bone: document.documentElement.style.getPropertyValue('--color-bone'),
-    ring: document.documentElement.style.getPropertyValue('--grade-ring-angle'),
+    ring:
+      document
+        .querySelector<HTMLElement>('aside[aria-label="Primary colour grade"]')
+        ?.style.getPropertyValue('--grade-ring-angle') ?? '',
   }));
 }
 

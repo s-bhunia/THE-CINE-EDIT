@@ -9,7 +9,7 @@
  * Bump on every hero re-encode, and keep it in step with the poster preload in
  * index.html, which has to request the exact same URL or the preload is wasted.
  */
-export const HERO_MEDIA_VERSION = '2';
+export const HERO_MEDIA_VERSION = '3';
 
 const query = `?v=${HERO_MEDIA_VERSION}`;
 

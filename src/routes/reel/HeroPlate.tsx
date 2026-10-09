@@ -44,7 +44,8 @@ export function HeroPlate() {
         <LoopVideo
           h264Src={heroMedia.loop1080}
           h264SrcNarrow={heroMedia.loop720}
-          posterSrc="/assets/hero/poster.avif"
+          posterSrc={heroMedia.poster}
+          holdsBoot
           onVideoElement={setHeroVideo}
           plateHidden={plateLive}
           startWhen={introDone}
@@ -66,6 +67,13 @@ export function HeroPlate() {
          * row, whose padding clears the corner furniture: the WhatsApp button,
          * the audio meter, and on a phone the row of grade looks.
          */}
+        {/* Keeps the header lockup and nav legible over bright skies, without
+            dimming the frame itself. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 z-10 h-[38%] bg-gradient-to-b from-ink/70 via-ink/25 to-transparent"
+        />
+
         <div className="absolute inset-0 z-10 flex flex-col justify-end px-6 md:px-10 pt-20 md:pt-24 pb-32 md:pb-24 bg-ink/10">
           <h1 className="sr-only font-mono tracking-[0.06em]">{site.name}</h1>
 

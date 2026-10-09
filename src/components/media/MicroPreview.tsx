@@ -1,6 +1,8 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useActiveVideo } from '@/hooks/useActiveVideo';
 import { useMediaCapability } from '@/hooks/useMediaCapability';
+
+const ENTER_DELAY_MS = 140;
 
 interface MicroPreviewProps {
   id: string;
@@ -27,12 +29,24 @@ export function MicroPreview({
   const { allowVideoPreview } = useMediaCapability();
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  // The poster holds until a frame is actually on screen, so the tile never
+  // flashes to its background while the clip is still fetching.
+  const [playing, setPlaying] = useState(false);
+  if (!isActive && playing) setPlaying(false);
 
   useEffect(() => {
     if (trigger !== 'controlled' || !allowVideoPreview) return;
-    if (wanted) requestPlayback();
-    else release();
-    return () => release();
+    if (!wanted) {
+      release();
+      return;
+    }
+    // A sweep across the board passes over several tiles; only one the
+    // cursor actually settles on is worth fetching a video for.
+    const timer = setTimeout(requestPlayback, ENTER_DELAY_MS);
+    return () => {
+      clearTimeout(timer);
+      release();
+    };
   }, [trigger, wanted, allowVideoPreview, requestPlayback, release]);
 
   useEffect(() => {
@@ -86,7 +100,7 @@ export function MicroPreview({
         alt=""
         loading="lazy"
         className="absolute inset-0 w-full h-full object-cover transition-opacity duration-280"
-        style={{ opacity: isActive ? 0 : 1 }}
+        style={{ opacity: isActive && playing ? 0 : 1 }}
       />
 
       {allowVideoPreview && isActive && previewSrc && (
@@ -96,6 +110,7 @@ export function MicroPreview({
           muted
           playsInline
           loop
+          onPlaying={() => setPlaying(true)}
           className="absolute inset-0 w-full h-full object-cover"
         />
       )}

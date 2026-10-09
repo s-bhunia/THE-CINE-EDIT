@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import type { CSSProperties } from 'react';
 
 /**
@@ -18,8 +19,21 @@ const ORBS = [
 ];
 
 export function CurtainDressing() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  // An attribute rather than state: flipping it should not re-render the panel.
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(([entry]) =>
+      node.toggleAttribute('data-live', entry?.isIntersecting ?? false),
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="curtain-dressing" aria-hidden="true">
+    <div ref={ref} className="curtain-dressing" aria-hidden="true">
       {ORBS.map((orb, index) => (
         <span
           key={index}

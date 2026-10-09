@@ -3,13 +3,14 @@ import type { Page } from '@playwright/test';
 /**
  * Navigate and wait for the boot splash to hand over.
  *
- * AppLoader is a full-screen overlay for roughly two and a half seconds, so it
- * swallows any click a test fires before then. `networkidle` is not enough —
- * the splash outlives it on a local preview.
+ * AppLoader is a full-screen overlay until the page's critical assets — the
+ * hero clip and its poster on `/` — have loaded, so it swallows any click a
+ * test fires before then. Prefer this to `networkidle`, which on `/` has to
+ * wait out the whole hero clip buffering.
  */
 export async function gotoStaged(page: Page, path = '/') {
   await page.goto(path);
-  await page.locator('[data-app-loader]').waitFor({ state: 'detached', timeout: 15000 });
+  await page.locator('[data-app-loader]').waitFor({ state: 'detached', timeout: 20000 });
 }
 
 /**

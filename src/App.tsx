@@ -19,6 +19,16 @@ const MediaDiagnostics = lazy(() =>
   })),
 );
 
+/**
+ * Sits after the Outlet inside its Suspense boundary, so its effect runs only
+ * once the lazy page has resolved and committed — after the page's own effects,
+ * which is where it takes its boot holds.
+ */
+function RouteReady() {
+  useEffect(() => bootStore.markRouteReady(), []);
+  return null;
+}
+
 export default function App() {
   useLenis();
   const location = useLocation();
@@ -58,6 +68,7 @@ export default function App() {
       >
         <Suspense fallback={<div className="min-h-screen bg-ink" />}>
           <Outlet />
+          <RouteReady />
         </Suspense>
       </main>
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMediaCapability } from '@/hooks/useMediaCapability';
+import { bootStore } from '@/store/boot';
 
 interface LoopVideoProps {
   av1Src?: string;
@@ -16,11 +17,17 @@ interface LoopVideoProps {
   /** True once something opaque is over the plate. Pausing also idles the GL
    *  plate, which only runs its rAF while the video is playing. */
   paused?: boolean;
+  /** Keeps the boot splash up until the poster is decoded and the clip can
+   *  play through, so the plate is never revealed black. */
+  holdsBoot?: boolean;
 }
 
 const REVEAL_EVENTS = ['loadeddata', 'canplay', 'playing'] as const;
 const HAVE_METADATA = 1;
 const HAVE_CURRENT_DATA = 2;
+const HAVE_ENOUGH_DATA = 4;
+/** Seconds buffered ahead that count as "loaded" for the splash's bar. */
+const BOOT_BUFFER_TARGET_S = 6;
 
 export function LoopVideo({
   av1Src,
@@ -33,8 +40,12 @@ export function LoopVideo({
   plateHidden = false,
   startWhen = true,
   paused = false,
+  holdsBoot = false,
 }: LoopVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const posterRef = useRef<HTMLImageElement>(null);
+  // Decided once: only the hard load that shows the splash waits on this clip.
+  const [booting] = useState(() => holdsBoot && !bootStore.getSnapshot());
   const { allowHeroVideo } = useMediaCapability();
   const [showVideo, setShowVideo] = useState(false);
 
@@ -93,6 +104,50 @@ export function LoopVideo({
     };
   }, [allowHeroVideo, onVideoElement, attemptPlay]);
 
+  useEffect(() => {
+    if (!booting) return;
+    const poster = posterRef.current;
+    if (!poster) return;
+    const hold = bootStore.hold();
+    if (poster.complete) {
+      hold.release();
+      return;
+    }
+    poster.addEventListener('load', hold.release, { once: true });
+    poster.addEventListener('error', hold.release, { once: true });
+    return () => {
+      poster.removeEventListener('load', hold.release);
+      poster.removeEventListener('error', hold.release);
+      hold.release();
+    };
+  }, [booting]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!booting || !video || !allowHeroVideo) return;
+    const hold = bootStore.hold();
+
+    const measure = () => {
+      if (video.readyState >= HAVE_ENOUGH_DATA) return hold.release();
+      const { buffered, duration } = video;
+      if (buffered.length === 0) return;
+      const ahead = buffered.end(buffered.length - 1) - video.currentTime;
+      const target = Math.min(BOOT_BUFFER_TARGET_S, duration || BOOT_BUFFER_TARGET_S);
+      if (ahead >= target) return hold.release();
+      hold.progress(ahead / target);
+    };
+    const events = ['progress', 'loadeddata', 'canplay', 'canplaythrough'] as const;
+    for (const name of events) video.addEventListener(name, measure);
+    video.addEventListener('error', hold.release);
+    measure();
+
+    return () => {
+      for (const name of events) video.removeEventListener(name, measure);
+      video.removeEventListener('error', hold.release);
+      hold.release();
+    };
+  }, [booting, allowHeroVideo]);
+
   // Playback is deliberately not an autoplay attribute: it starts here, rewound,
   // once the splash has lifted, and stops again whenever the plate is covered.
   // The rewind is guarded so it only happens on that first start — scrolling
@@ -121,6 +176,7 @@ export function LoopVideo({
   return (
     <div className="relative w-full h-full bg-ink">
       <img
+        ref={posterRef}
         src={posterSrc}
         alt=""
         fetchPriority="high"
@@ -134,7 +190,7 @@ export function LoopVideo({
           loop
           muted
           playsInline
-          preload="metadata"
+          preload={booting ? 'auto' : 'metadata'}
           aria-hidden="true"
           tabIndex={-1}
           className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-520 ease-[cubic-bezier(0.16,1,0.3,1)] ${showVideo && !plateHidden ? 'opacity-100' : 'opacity-0'}`}

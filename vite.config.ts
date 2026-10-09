@@ -5,7 +5,7 @@ import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
-const SOURCE_ONLY_PUBLIC_DIRS = ['assets/video', 'assets/photo'];
+const SOURCE_ONLY_PUBLIC_DIRS = ['assets/video', 'assets/photo', 'assets/hero/backup'];
 export const BUILD_MANIFEST_PATH = '.build-manifest.json';
 
 function pruneSourceMedia(): Plugin {

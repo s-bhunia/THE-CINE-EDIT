@@ -1,6 +1,14 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import type { CSSProperties } from 'react';
 import { site } from '@/content/site';
+import { bootStore } from '@/store/boot';
 import { usePrefersReducedMotion } from '@/components/ui/usePrefersReducedMotion';
 
 const LETTER_STAGGER_MS = 48;
@@ -9,7 +17,11 @@ const LETTER_STAGGER_MS = 48;
 // (11 letters × 48ms + the 940ms hero-letter animation) to land before the
 // exit can start — cutting either off mid-flight reads as a stutter, not a cut.
 const MIN_SHOW_MS = 1550;
-const MAX_SHOW_MS = 3200;
+// A dead connection must not trap the visitor behind the splash. Past this the
+// site is shown anyway; the hero poster stays up until the clip can play.
+const MAX_WAIT_MS = 15000;
+// Lets the progress rule visibly reach the end before the cut starts.
+const FILLED_HOLD_MS = 380;
 const GROW_MS = 240;
 const SPREAD_MS = 200;
 const FADE_MS = 340;
@@ -87,40 +99,51 @@ export function AppLoader({ onDone }: AppLoaderProps) {
     return () => window.removeEventListener('resize', measure);
   }, [reducedMotion]);
 
+  const assetsReady = useSyncExternalStore(bootStore.subscribe, bootStore.getAssetsReady);
+  const progress = useSyncExternalStore(bootStore.subscribe, bootStore.getAssetProgress);
+  const [minShown, setMinShown] = useState(false);
+  const [gaveUp, setGaveUp] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
-    const minShowMs = reducedMotion ? REDUCED_MIN_MS : MIN_SHOW_MS;
     const fontsReady = 'fonts' in document ? document.fonts.ready : Promise.resolve();
-
-    const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-
-    Promise.race([Promise.all([delay(minShowMs), fontsReady]), delay(MAX_SHOW_MS)]).then(
-      () => {
-        if (cancelled) return;
-
-        if (reducedMotion) {
-          setExiting(true);
-          setTimeout(() => !cancelled && onDone(), REDUCED_FADE_MS);
-          return;
-        }
-
-        setCutStage('grow');
-        setTimeout(() => {
-          if (cancelled) return;
-          setCutStage('spread');
-          setTimeout(() => {
-            if (cancelled) return;
-            setExiting(true);
-            setTimeout(() => !cancelled && onDone(), FADE_MS);
-          }, SPREAD_MS);
-        }, GROW_MS);
-      },
+    const minDelay = new Promise<void>((resolve) =>
+      setTimeout(resolve, reducedMotion ? REDUCED_MIN_MS : MIN_SHOW_MS),
     );
-
+    void Promise.all([minDelay, fontsReady]).then(() => !cancelled && setMinShown(true));
+    const cap = setTimeout(() => setGaveUp(true), MAX_WAIT_MS);
     return () => {
       cancelled = true;
+      clearTimeout(cap);
     };
-  }, [reducedMotion, onDone]);
+  }, [reducedMotion]);
+
+  const canExit = minShown && (assetsReady || gaveUp);
+
+  useEffect(() => {
+    if (!canExit) return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const after = (ms: number, run: () => void) => timers.push(setTimeout(run, ms));
+
+    if (reducedMotion) {
+      setExiting(true);
+      after(REDUCED_FADE_MS, onDone);
+    } else {
+      after(FILLED_HOLD_MS, () => {
+        setCutStage('grow');
+        after(GROW_MS, () => {
+          setCutStage('spread');
+          after(SPREAD_MS, () => {
+            setExiting(true);
+            after(FADE_MS, onDone);
+          });
+        });
+      });
+    }
+    return () => timers.forEach(clearTimeout);
+  }, [canExit, reducedMotion, onDone]);
+
+  const shownProgress = canExit ? 1 : progress;
 
   // Split per word, same convention as HeroPlate's title, so the join stays
   // an explicit JSX space rather than a single-space text node that a
@@ -193,11 +216,17 @@ export function AppLoader({ onDone }: AppLoaderProps) {
           )}
         </p>
 
-        {!reducedMotion && (
+        <span className="flex items-center gap-3">
           <span className="block h-px w-40 overflow-hidden bg-ink-line">
-            <span className="app-loader-rule-fill block h-full w-full bg-safelight" />
+            <span
+              className="app-loader-rule-fill block h-full w-full bg-safelight"
+              style={{ transform: `scaleX(${shownProgress})` }}
+            />
           </span>
-        )}
+          <span className="metadata w-[4ch] text-right text-[10px] tabular-nums text-bone-dim">
+            {String(Math.round(shownProgress * 100)).padStart(3, '0')}
+          </span>
+        </span>
       </div>
 
       {!reducedMotion && seed && (

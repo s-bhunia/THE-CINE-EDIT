@@ -70,6 +70,7 @@ function readBaselinePalette(): Map<string, string> {
 export function GradeWheels() {
   const [wheels, setWheels] = useState<WheelState>(NEUTRAL_WHEELS);
   const baseline = useRef<Map<string, string> | null>(null);
+  const ringsRef = useRef<HTMLElement>(null);
   const { allowMotion } = useMediaCapability();
 
   const expanded = !useScrolledPast(SHRINK_AFTER);
@@ -83,7 +84,6 @@ export function GradeWheels() {
       const root = document.documentElement;
       for (const token of GRADED_TOKENS) root.style.removeProperty(token);
       root.removeAttribute('data-grade');
-      root.style.removeProperty('--grade-ring-angle');
     };
   }, []);
 
@@ -106,28 +106,34 @@ export function GradeWheels() {
   }, [neutral, transfer]);
 
   useEffect(() => {
+    const rings = ringsRef.current;
+    if (!rings) return;
     if (!allowMotion) {
-      document.documentElement.style.setProperty('--grade-ring-angle', '0deg');
+      rings.style.setProperty('--grade-ring-angle', '0deg');
       return;
     }
 
+    // Scroll-driven, coalesced to one write per frame; idle when the page is.
+    // Written on the wheels themselves, not the root, so a scroll restyles
+    // three rings rather than the whole document.
     let frame = 0;
-    let lastOffset = -1;
-
-    const tick = () => {
-      const offset = window.scrollY;
-      if (offset !== lastOffset) {
-        lastOffset = offset;
-        document.documentElement.style.setProperty(
-          '--grade-ring-angle',
-          `${(offset * RING_DEGREES_PER_PIXEL).toFixed(2)}deg`,
-        );
-      }
-      frame = requestAnimationFrame(tick);
+    const write = () => {
+      frame = 0;
+      rings.style.setProperty(
+        '--grade-ring-angle',
+        `${(window.scrollY * RING_DEGREES_PER_PIXEL).toFixed(2)}deg`,
+      );
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(write);
     };
 
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
+    write();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(frame);
+    };
   }, [allowMotion]);
 
   const setPuck = useCallback(
@@ -178,6 +184,7 @@ export function GradeWheels() {
       </svg>
 
       <aside
+        ref={ringsRef}
         aria-label="Primary colour grade"
         className="group/grade fixed bottom-16 left-6 z-40 hidden md:flex flex-col items-start gap-2 origin-bottom-left"
         style={{

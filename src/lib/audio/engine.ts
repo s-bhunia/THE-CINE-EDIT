@@ -42,8 +42,11 @@ interface AudioPrefs {
   mediaMuted: boolean;
 }
 
-/** Both buses are on unless the visitor has turned one off. */
-const DEFAULT_PREFS: AudioPrefs = { muted: false, mediaMuted: false };
+/**
+ * Interface sound starts off and is opt-in from the AudioToggle. Film sound in
+ * a player the visitor has deliberately opened stays on.
+ */
+const DEFAULT_PREFS: AudioPrefs = { muted: true, mediaMuted: false };
 
 function readStoredPrefs(): AudioPrefs {
   if (typeof localStorage === 'undefined') return { ...DEFAULT_PREFS };

@@ -54,12 +54,24 @@ export function usePointerPan({ enabled, columns, rows, onHover }: PointerPanOpt
       onHoverRef.current?.(next);
     };
 
+    // Measured on pointer movement and resize, never inside the frame loop,
+    // so a frame is pure writes and never forces a layout.
+    const box = { left: 0, top: 0, width: 0, height: 0, boardW: 0, boardH: 0 };
+    const measure = () => {
+      const rect = frame.getBoundingClientRect();
+      box.left = rect.left;
+      box.top = rect.top;
+      box.width = rect.width;
+      box.height = rect.height;
+      box.boardW = board.offsetWidth;
+      box.boardH = board.offsetHeight;
+    };
+
     const tick = () => {
       state.raf = 0;
-      const { width, height } = frame.getBoundingClientRect();
       // How far the board hangs past the frame, halved: that is the travel.
-      const maxX = Math.max(0, (board.offsetWidth - width) / 2);
-      const maxY = Math.max(0, (board.offsetHeight - height) / 2);
+      const maxX = Math.max(0, (box.boardW - box.width) / 2);
+      const maxY = Math.max(0, (box.boardH - box.height) / 2);
 
       const goalX = -state.nx * maxX;
       const goalY = -state.ny * maxY;
@@ -73,11 +85,12 @@ export function usePointerPan({ enabled, columns, rows, onHover }: PointerPanOpt
       frame.style.setProperty('--mx', `${(((state.nx + 1) / 2) * 100).toFixed(1)}%`);
       frame.style.setProperty('--my', `${(((state.ny + 1) / 2) * 100).toFixed(1)}%`);
 
-      // Measured after the write, so the rect already carries the pan and the
-      // cell maths needs no correction for it.
-      const rect = board.getBoundingClientRect();
-      const col = Math.floor(((state.px - rect.left) / rect.width) * columns);
-      const row = Math.floor(((state.py - rect.top) / rect.height) * rows);
+      // The board is centred in the frame, so its edges are known from the
+      // cached sizes plus the pan just written.
+      const boardLeft = box.left + (box.width - box.boardW) / 2 + state.tx;
+      const boardTop = box.top + (box.height - box.boardH) / 2 + state.ty;
+      const col = Math.floor(((state.px - boardLeft) / box.boardW) * columns);
+      const row = Math.floor(((state.py - boardTop) / box.boardH) * rows);
       const inside = col >= 0 && col < columns && row >= 0 && row < rows;
       setHover(inside ? row * columns + col : null);
 
@@ -92,9 +105,9 @@ export function usePointerPan({ enabled, columns, rows, onHover }: PointerPanOpt
 
     const onPointerMove = (event: PointerEvent) => {
       if (event.pointerType !== 'mouse') return;
-      const rect = frame.getBoundingClientRect();
-      state.nx = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      state.ny = ((event.clientY - rect.top) / rect.height) * 2 - 1;
+      measure();
+      state.nx = ((event.clientX - box.left) / box.width) * 2 - 1;
+      state.ny = ((event.clientY - box.top) / box.height) * 2 - 1;
       state.px = event.clientX;
       state.py = event.clientY;
       start();

@@ -6,6 +6,8 @@ const WHEEL_RADIUS = 104;
 const CIRCUMFERENCE = 2 * Math.PI * WHEEL_RADIUS;
 /** Absorbs the jump after a tab switch rather than lurching the strip. */
 const MAX_FRAME_SECONDS = 0.05;
+/** How quickly the reel brakes and recovers, per second. */
+const SPEED_EASE = 4;
 
 /**
  * Runs the filmstrip past the wheel.
@@ -33,16 +35,19 @@ export function useReelTransport(enabled: boolean) {
     };
 
     let offset = 0;
-    let last = performance.now();
+    let speed = SPEED_PX_PER_SECOND;
+    let last = 0;
     let raf = 0;
 
     const tick = (now: number) => {
-      const delta = Math.min((now - last) / 1000, MAX_FRAME_SECONDS);
+      const delta = last ? Math.min((now - last) / 1000, MAX_FRAME_SECONDS) : 0;
       last = now;
 
-      if (!paused.current && cycle > 0) {
-        offset = (offset + SPEED_PX_PER_SECOND * delta) % cycle;
-      }
+      // Eases toward its target rather than snapping, so a hover brakes the
+      // reel and leaving it lets the reel pick back up, like a real transport.
+      const target = paused.current ? 0 : SPEED_PX_PER_SECOND;
+      speed += (target - speed) * Math.min(1, delta * SPEED_EASE);
+      if (cycle > 0) offset = (offset + speed * delta) % cycle;
 
       strip.style.transform = `translate3d(${(-offset).toFixed(2)}px, 0, 0)`;
       // On the root, not the strip: the wheel is the strip's sibling, and
@@ -52,10 +57,19 @@ export function useReelTransport(enabled: boolean) {
       raf = requestAnimationFrame(tick);
     };
 
-    raf = requestAnimationFrame(tick);
+    // The panel stays mounted for the life of the page once deferred content
+    // arrives, so the loop is gated on it actually being on screen.
+    const observer = new IntersectionObserver(([entry]) => {
+      cancelAnimationFrame(raf);
+      raf = 0;
+      last = 0;
+      if (entry?.isIntersecting) raf = requestAnimationFrame(tick);
+    });
+    observer.observe(root);
     window.addEventListener('resize', remeasure);
 
     return () => {
+      observer.disconnect();
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', remeasure);
       strip.style.transform = '';
